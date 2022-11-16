@@ -1,0 +1,102 @@
+1.txt:
+criminal(X) :- american(X), weapon(Y), nation(Z),
+ hostile(Z), sells(X,Z,Y).
+owns(nono,msl(nono)). missile(msl(nono)).
+sells(west,nono,M) :- owns(nono,M), missile(M).
+weapon(W) :- missile(W).
+hostile(H) :- enemy(H,america).
+american(west).
+nation(nono). enemy(nono,america).
+nation(america).
+?- criminal(Who).
+
+2.txt:
+object(candle,red,small,1).
+object(apple,red,small,1).
+object(apple,green,small,1).
+object(table,blue,big,50).
+location(object(candle,red,small,1), kitchen).
+location(object(apple,red,small,1), kitchen).
+location(object(apple,green,small,1), kitchen).
+location(object(table,blue,big,50), kitchen).
+?- location(object(_name,red,_,_), kitchen).
+
+3.txt:
+num(0).
+num(s(N)) :- num(N).
+num_plus(0,N,N).
+num_plus(s(M),N,P) :- num_plus(M,s(N),P).
+?- num( s(s(s(0))) ).
+
+4.txt:
+say(N, From, To) :- write('move disc '), write(N), write(' from '),
+ write(From), write(' to '), write(To), nl.
+hanoi(N) :- move(N, left, center, right).
+move(0, _, _, _).
+move(N, From, To, Using) :- is(M, N-1), move(M, From, Using, To),
+ say(N, From, To), move(M, Using, To, From).
+?- hanoi(3).
+
+5.txt:
+factorial(N,F) :- factorial(N,1,F).
+factorial(0,F,F).
+factorial(N,A,F) :- A1 is N*A, N1 is N-1, factorial(N1,A1,F).
+?- factorial(100,Result).
+
+6.txt:
+mergeSort([], []).
+mergeSort([A], [A]).
+mergeSort([A, B | Rest], S) :- divide([A, B | Rest], L1, L2),
+ mergeSort(L1, S1),
+ mergeSort(L2, S2),
+ merge(S1, S2, S).
+divide([], [], []). divide([A], [A], []).
+divide([A, B | R], [A | Ra], [B | Rb]) :- divide(R, Ra, Rb).
+merge(A, [], A). merge([], B, B).
+merge([A | Ra], [B | Rb], [A | M]) :- A =< B, merge(Ra, [B | Rb], M).
+merge([A | Ra], [B | Rb], [B | M]) :- A > B, merge([A | Ra], Rb, M).
+?- mergeSort([3, 4, 8, 0, 1, 9, 5, 6], Sorted).
+
+7.txt:
+object(candle,red,small,1).
+object(apple,red,small,1).
+object(apple,green,small,1).
+object(table,blue,big,50).
+location(object(candle,red,small,1), kitchen).
+location(object(apple,red,small,1), kitchen).
+location(object(apple,green,small,1), kitchen).
+location(object(table,blue,big,50), kitchen).
+?- location(object(_name,red,_,_), kitchen).
+8.txt:
+num(0).
+num(s(N)) :- num(N).
+num_plus(0,N,N).
+num_plus(s(M),N,P) :- num_plus(M,s(N),P).
+?- num( s(s(s(0))) ).
+9.txt:
+say(N, From, To) :- write('move disc '), write(N), write(' from '),
+ 		            write(From), write(' to '), write(To), nl.
+hanoi(N) :- move(N, left, center, right).
+move(0, _, _, _).
+move(N, From, To, Using) :- is(M, N-1), move(M, From, Using, To),
+ 			                say(N, From, To), move(M, Using, To, From).
+?- hanoi(3). 
+
+10.txt:
+factorial(N,F) :- factorial(N,1,F).
+factorial(0,F,F).
+factorial(N,A,F) :- A1 is N*A, N1 is N-1, factorial(N1,A1,F).
+?- factorial(100,Result).
+11.txt:
+mergeSort([], []).
+mergeSort([A], [A]).
+mergeSort([A, B | Rest], S) :- divide([A, B | Rest], L1, L2),
+                               mergeSort(L1, S1),
+                               mergeSort(L2, S2),
+                               merge(S1, S2, S).
+divide([], [], []). divide([A], [A], []).
+divide([A, B | R], [A | Ra], [B | Rb]) :- divide(R, Ra, Rb).
+merge(A, [], A). merge([], B, B).
+merge([A | Ra], [B | Rb], [A | M]) :- A =< B, merge(Ra, [B | Rb], M).
+merge([A | Ra], [B | Rb], [B | M]) :- A > B, merge([A | Ra], Rb, M).
+?- mergeSort([3, 4, 8, 0, 1, 9, 5, 6], Sorted).

@@ -1,10 +1,39 @@
 #!/usr/bin/python3
 # Gregory Smith     b00095534
 # Joseph Press      b00095348
+import itertools
+
+# Current Program Generator that will be set in the parse() function.
+# This generator will produce the next non-blank character
+# of the input program when next(CPG) is called
+CPG = None
+
+def nextNonBlank():
+    """
+    Return the next non blank character from CPG"""
+    n = next(CPG)
+    while n.isspace():n = next(CPG)
+    return n
+
+def peek():
+    """
+    Peek at the next element from the CPG generator.
+    Return a tuple (peeked_value, original_iterator)"""
+    peek = next(CPG)
+    CPG = itertools.chain([peek],CPG)
+    return peek
 
 # TODO
 def parse(contents):
-    return contents
+    """
+    Parse a program.
+    Output "valid program" or a string listing errors."""
+    def program_gen(contents):
+        for ch in contents:
+            #if ch.isspace():continue
+            yield ch
+    CPG = program_gen(contents)
+    return ''.join(list(CPG))
 
 def main() -> int:
     i = 1
