@@ -4,6 +4,17 @@
 import itertools
 
 class Parser():
+    """Parser class that takes a program and tells whether it is valid according
+    to the simplified prolog grammar."""
+
+    class ParserError(Exception):
+        """Exception raised by the parser
+        Attributes:
+            message -- explanation of the exception including
+            the line number where this exception happened"""
+        def __init__(self, description, ln):
+            self.message="Line " + str(ln) + ": " + description
+
     def __init__(self, cont):
         def prog_gen(prog):
             for ch in prog:
@@ -23,9 +34,8 @@ class Parser():
     # TODO implement this
     # backtrack by saving a copy of the self.program_gen in another variable
     def parse(self):
-        """
-        Parse a program.
-        Output a list of descriptions of errors in the program"""
+        """Parse a program.
+            Output a list of descriptions of errors in the program"""
         self.program()
         return self.error_list
 
@@ -33,10 +43,45 @@ class Parser():
     def program(self):
         pass
 
+    def peek_token(self):
+        """Retrieve and return the next token without changing the state of
+        self.program_gen or the self.next_tok variable"""
+        temp_gen = self.program_gen
+        n=next(temp_gen)
+        if n == '.':
+            return '.'
+        elif n==',':
+            return ','
+        elif n == "'":
+            return "'"
+        elif n == '(':
+            return '('
+        elif n == ')':
+            return ')'
+        elif n == '?':
+            if next(temp_gen) == '-':
+                return '?-'
+            else:
+                return 'special'
+        elif n == ':':
+            if next(temp_gen) == '-':
+                return ':-'
+            else:
+                return 'special'
+        elif n in self.specials:
+            return 'special'
+        elif n in self.digits:
+            return 'digit'
+        elif n in self.uppercase-chars:
+            return 'uppercase-char'
+        elif n in self.lowercase-chars:
+            return 'lowercase-char'
+        else: # unrecognized token
+            raise ParserError('Unrecognized token: "' + n + '"', self.line_num)
+
     def token(self):
-        """
-        Store the name of the next token in the self.next_tok variable"""
-        n=self.next_nonblank()
+        """Store the name of the next token in the self.next_tok variable"""
+        n=self.next_ch()
         if n == '.':
             self.next_token = '.'
         elif n == ',':
@@ -49,11 +94,13 @@ class Parser():
             self.next_token = ')'
         elif n == '?':
             if self.peek_ch() == '-':
+                self.next_ch() # get rid of '-'
                 self.next_token = '?-'
             else:
                 self.next_token = 'special'
         elif n == ':':
             if self.peek_ch() == '-':
+                self.next_ch() # get rid of '-'
                 self.next_token = ':-'
             else:
                 self.next_token = 'special'
@@ -66,42 +113,35 @@ class Parser():
         elif n in self.lowercase-chars:
             self.next_token = 'lowercase-char'
         else: # unrecognized token
-            # TODO this needs to be handled by raising an exception rather than
-            # the add_error() function
-            self.add_error('unrecognized token: '+n)
+            raise ParserError('Unrecognized token: "' + n + '"', self.line_num)
 
-    def add_error(self, message, line=self.line_num):
-        """
-        Add the error message to the list of errors that will be returned by
+    def add_error(self, message):
+        """Add the error message to the list of errors that will be returned by
         this parser."""
-        self.error_list.append("Line: "+str(line)+ "\n"+message)
+        self.error_list.append(message)
 
     def next_nonblank(self):
-        """
-        Return the next non blank character from CPG"""
+        """Return the next non blank character from self.program_gen"""
         n = next(self.program_gen)
         while n.isspace():n = next(self.program_gen)
         return n
 
     def peek_ch(self):
-        """
-        Peek at the next character from the program generator.
-        Return the peeked value"""
+        """Peek at the next character from the program generator.
+            Return the peeked value"""
         peek = next(self.program_gen)
         self.program_gen = itertools.chain([peek],self.program_gen)
         return peek
 
     def next_ch(self):
-        """
-        Call next(self.program_gen), increment self.line_num if necessary"""
+        """Call next(self.program_gen), increment self.line_num if necessary"""
         n=next(self.program_gen)
         if n == '\n':
             self.line_num += 1
         return n
     
     def next_line(self):
-        """
-        Set the self.line_buffer variable by reading until the next period."""
+        """Set the self.line_buffer variable by reading until the next period."""
         self.line_buffer = ''
         self.line_buffer_num=self.line_num
         n=self.next_nonblank()
