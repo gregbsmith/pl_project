@@ -14,6 +14,7 @@ class Parser():
         self.error_list=[]
         self.line_buffer=''
         self.line_buffer_num=0
+        self.next_tok=''
 
     # TODO
     def parse(self):
@@ -44,6 +45,12 @@ class Parser():
         if n == '\n':
             self.line_num += 1
         return n
+    
+    #TODO
+    def token(self):
+        """
+        Store the name of the next token in the self.next_tok variable"""
+        pass
 
     def next_line(self):
         """
@@ -55,7 +62,27 @@ class Parser():
             self.line_buffer+=n
             n=self.next_ch()
         self.line_buffer+='.'
+        return self.line_buffer
 
+# debugging:
+def debug() -> int:
+    i = 1
+    while True: # loop until file open fails
+        try:
+            f=open(str(i)+'.txt','r')
+        except FileNotFoundError:
+            return 0
+        contents = f.read()
+        parser = Parser(contents)
+        output = parser.next_line()
+        print(output)
+        i+=1
+    return 0
+
+
+# main function
+# reads input files numbered 1.txt and up, parses them and gives output
+# to parser_output.txt
 def main() -> int:
     i = 1
     outputs_lst = []
@@ -71,12 +98,15 @@ def main() -> int:
         contents = f.read()
         parser = Parser(contents)
         output = parser.parse()
-        outputs_lst.append(str(i)+".txt:\n")
+        outputs_lst.append(str(i)+".txt: ")
         if len(output) == 0:
-            outputs_lst.append("Valid program")
+            outputs_lst.append("Valid program\n")
         else:
             outputs_lst.append('\n'.join(output))
         i+=1
     return 0
 
-if __name__=="__main__": exit(main())
+#TODO uncomment this
+#if __name__=="__main__": exit(main())
+#delete this
+if __name__=="__main__": exit(debug())
