@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # Gregory Smith     b00095534
 # Joseph Press      b00095348
+# Abdu Sallouh      b00087818
 import itertools
 
 class Parser():
@@ -39,15 +40,75 @@ class Parser():
         self.program()
         return self.error_list
 
-    # TODO
     def program(self):
+        """Subroutine for the <program> symbol.
+            Valid programs have a <query>, optionally preceded by a <clause-list>."""
+        # To preserve the state of self.program_gen and allow reversion back to
+        # this state, save program_gen to a backup
+        local_errors = []
+        program_gen_backup = self.program_gen
+        try:
+            self.clause_list()
+        except ParserError as err:
+            local_errors.append(err.message)
+            self.program_gen = program_gen_backup
+        try:
+            self.query()
+        except ParserError as err:
+            local_errors.append(err.message)
+            self.error_list += local_errors
+    #TODO
+    def clause_list(self):
         pass
 
-    def peek_token(self):
+    #TODO
+    def clause(self):
+        pass
+
+    #TODO
+    def query(self):
+        pass
+
+    #TODO
+    def predicate_list(self):
+        pass
+
+    #TODO
+    def predicate(self):
+        pass
+
+    #TODO
+    def term_list(self):
+        pass
+
+    #TODO
+    def term(self):
+        pass
+
+    #TODO
+    def structure(self):
+        pass
+
+    #TODO
+    def atom(self):
+        pass
+
+    #TODO
+    def small_atom(self):
+        pass
+
+    #TODO
+    def variable(self):
+        pass
+
+    def peek_token(self, skip_blanks=False):
         """Retrieve and return the next token without changing the state of
         self.program_gen or the self.next_tok variable"""
         temp_gen = self.program_gen
         n=next(temp_gen)
+        if skip_blanks:
+            while n.isspace():
+                n=next(temp_gen)
         if n == '.':
             return '.'
         elif n==',':
@@ -79,9 +140,13 @@ class Parser():
         else: # unrecognized token
             raise ParserError('Unrecognized token: "' + n + '"', self.line_num)
 
-    def token(self):
+    def token(self, skip_blanks=False):
         """Store the name of the next token in the self.next_tok variable"""
-        n=self.next_ch()
+        if skip_blanks:
+            n=self.next_nonblank()
+        else:
+            n=self.next_ch()
+
         if n == '.':
             self.next_token = '.'
         elif n == ',':
