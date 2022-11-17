@@ -15,11 +15,10 @@ class Parser():
         self.line_buffer=''
         self.line_buffer_num=0
         self.next_tok=''
-        # TODO fill these lists in
-        self.specials=[]
-        self.digits=[]
-        self.uppercase-chars[]
-        self.lowercase-chars[]
+        self.specials=['+','-','*','/',"""\""",'^','~',':','.','?',' ','#','$','&']
+        self.digits=[str(i) for i in range(10)]
+        self.uppercase-chars=[chr(i) for i in range(65,91)]+['_']
+        self.lowercase-chars=[chr(i) for i in range(97,123)]
 
     # TODO implement this
     # backtrack by saving a copy of the self.program_gen in another variable
