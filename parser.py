@@ -21,7 +21,8 @@ class Parser():
         self.uppercase-chars[]
         self.lowercase-chars[]
 
-    # TODO
+    # TODO implement this
+    # backtrack by saving a copy of the self.program_gen in another variable
     def parse(self):
         """
         Parse a program.
@@ -66,6 +67,8 @@ class Parser():
         elif n in self.lowercase-chars:
             self.next_token = 'lowercase-char'
         else: # unrecognized token
+            # TODO this needs to be handled by raising an exception rather than
+            # the add_error() function
             self.add_error('unrecognized token: '+n)
 
     def add_error(self, message, line=self.line_num):
