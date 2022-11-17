@@ -1,0 +1,11 @@
+.
+,
+'
+?-
+:-
+(
+)
+special
+digit
+uppercase-char
+lowercase-char

@@ -21,7 +21,18 @@ class Parser():
         """
         Parse a program.
         Output "valid program" or a string listing errors."""
+        self.program()
         return self.error_list
+
+    # TODO
+    def program(self):
+        pass
+
+    #TODO
+    def token(self):
+        """
+        Store the name of the next token in the self.next_tok variable"""
+        pass
 
     def next_nonblank(self):
         """
@@ -46,12 +57,6 @@ class Parser():
             self.line_num += 1
         return n
     
-    #TODO
-    def token(self):
-        """
-        Store the name of the next token in the self.next_tok variable"""
-        pass
-
     def next_line(self):
         """
         Set the self.line_buffer variable by reading until the next period."""
