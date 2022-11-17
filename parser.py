@@ -10,15 +10,19 @@ class Parser():
                 yield ch
         self.contents = cont
         self.program_gen=prog_gen(cont)
+        self.line_num=0
+        self.error_list=[]
+        self.line_buffer=''
+        self.line_buffer_num=0
 
     # TODO
     def parse(self):
         """
         Parse a program.
         Output "valid program" or a string listing errors."""
-        return ''.join(list(self.program_gen))
+        return self.error_list
 
-    def nextNonBlank(self):
+    def next_nonblank(self):
         """
         Return the next non blank character from CPG"""
         n = next(self.program_gen)
@@ -32,6 +36,25 @@ class Parser():
         peek = next(self.program_gen)
         self.program_gen = itertools.chain([peek],self.program_gen)
         return peek
+
+    def next_ch(self):
+        """
+        Call next(self.program_gen), increment self.line_num if necessary"""
+        n=next(self.program_gen)
+        if n == '\n':
+            self.line_num += 1
+        return n
+
+    def next_line(self):
+        """
+        Set the self.line_buffer variable by reading until the next period."""
+        self.line_buffer = ''
+        self.line_buffer_num=self.line_num
+        n=self.next_nonblank()
+        while n!='.':
+            self.line_buffer+=n
+            n=self.next_ch()
+        self.line_buffer+='.'
 
 def main() -> int:
     i = 1
@@ -48,7 +71,11 @@ def main() -> int:
         contents = f.read()
         parser = Parser(contents)
         output = parser.parse()
-        outputs_lst.append(str(i)+".txt:\n"+output)
+        outputs_lst.append(str(i)+".txt:\n")
+        if len(output) == 0:
+            outputs_lst.append("Valid program")
+        else:
+            outputs_lst.append('\n'.join(output))
         i+=1
     return 0
 
