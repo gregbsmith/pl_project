@@ -3,37 +3,35 @@
 # Joseph Press      b00095348
 import itertools
 
-# Current Program Generator that will be set in the parse() function.
-# This generator will produce the next non-blank character
-# of the input program when next(CPG) is called
-CPG = None
+class Parser():
+    def __init__(self, cont):
+        def prog_gen(prog):
+            for ch in prog:
+                yield ch
+        self.contents = cont
+        self.program_gen=prog_gen(cont)
 
-def nextNonBlank():
-    """
-    Return the next non blank character from CPG"""
-    n = next(CPG)
-    while n.isspace():n = next(CPG)
-    return n
+    # TODO
+    def parse(self):
+        """
+        Parse a program.
+        Output "valid program" or a string listing errors."""
+        return ''.join(list(self.program_gen))
 
-def peek():
-    """
-    Peek at the next element from the CPG generator.
-    Return a tuple (peeked_value, original_iterator)"""
-    peek = next(CPG)
-    CPG = itertools.chain([peek],CPG)
-    return peek
+    def nextNonBlank(self):
+        """
+        Return the next non blank character from CPG"""
+        n = next(self.program_gen)
+        while n.isspace():n = next(self.program_gen)
+        return n
 
-# TODO
-def parse(contents):
-    """
-    Parse a program.
-    Output "valid program" or a string listing errors."""
-    def program_gen(contents):
-        for ch in contents:
-            #if ch.isspace():continue
-            yield ch
-    CPG = program_gen(contents)
-    return ''.join(list(CPG))
+    def peek_ch(self):
+        """
+        Peek at the next character from the program generator.
+        Return the peeked value"""
+        peek = next(self.program_gen)
+        self.program_gen = itertools.chain([peek],self.program_gen)
+        return peek
 
 def main() -> int:
     i = 1
@@ -48,10 +46,10 @@ def main() -> int:
             return 0
         # read and parse the contents of the file
         contents = f.read()
-        output = parse(contents)
+        parser = Parser(contents)
+        output = parser.parse()
         outputs_lst.append(str(i)+".txt:\n"+output)
         i+=1
     return 0
 
-if __name__=="__main__":
-    exit(main())
+if __name__=="__main__": exit(main())
