@@ -28,16 +28,17 @@ class Parser():
         self.line_buffer=''
         self.line_buffer_num=0
         self.next_tok=''
-        self.specials=['+','-','*','/',"""\""",'^','~',':','.','?',' ','#','$','&']
+        self.specials=['+','-','*','/',"\\",'^','~',':','.','?',' ','#','$','&']
         self.digits=[str(i) for i in range(10)]
-        self.uppercase-chars=[chr(i) for i in range(65,91)]+['_']
-        self.lowercase-chars=[chr(i) for i in range(97,123)]
+        self.uppercase_chars=[chr(i) for i in range(65,91)]+['_']
+        self.lowercase_chars=[chr(i) for i in range(97,123)]
 
     # TODO implement this
     # backtrack by saving a copy of the self.program_gen in another variable
     # with copy.deepcopy(self.program_gen)
     def parse(self):
-        """Parse a program. Output a list of descriptions of errors in the program"""
+        """Parse a program.
+        Output a list of descriptions of errors in the program"""
         self.program()
         return self.error_list
 
@@ -169,9 +170,9 @@ class Parser():
             return 'special'
         elif n in self.digits:
             return 'digit'
-        elif n in self.uppercase-chars:
+        elif n in self.uppercase_chars:
             return 'uppercase-char'
-        elif n in self.lowercase-chars:
+        elif n in self.lowercase_chars:
             return 'lowercase-char'
         else: # unrecognized token
             raise ParserError('Unrecognized token: "' + n + '"', self.line_num)
@@ -200,9 +201,9 @@ class Parser():
             self.next_token = 'special'
         elif n in self.digits:
             self.next_token = 'digit'
-        elif n in self.uppercase-chars:
+        elif n in self.uppercase_chars:
             self.next_token = 'uppercase-char'
-        elif n in self.lowercase-chars:
+        elif n in self.lowercase_chars:
             self.next_token = 'lowercase-char'
         else: # unrecognized token
             raise ParserError('Unrecognized token: "' + n + '"', self.line_num)
@@ -214,7 +215,7 @@ class Parser():
         self.error_list.append(message)
 
     def next_nonblank(self):
-        """Return the next non blank character from self.program_gen"""
+        "Return the next non blank character from self.program_gen"
         n = self.next_ch()
         while n.isspace():n = self.next_ch()
         return n
@@ -227,7 +228,7 @@ class Parser():
         return peek
 
     def next_ch(self):
-        """Call next(self.program_gen), increment self.line_num if necessary"""
+        "Call next(self.program_gen), increment self.line_num if necessary"
         try:
             n=next(self.program_gen)
         except StopIteration:
@@ -237,7 +238,7 @@ class Parser():
         return n
     
     def next_line(self):
-        """Set the self.line_buffer variable by reading until the next period."""
+        "Set the self.line_buffer variable by reading until the next period."
         self.line_buffer = ''
         self.line_buffer_num=self.line_num
         n=self.next_nonblank()
@@ -292,4 +293,5 @@ def main() -> int:
 #TODO uncomment this
 #if __name__=="__main__": exit(main())
 #delete this
-if __name__=="__main__": exit(debug())
+if __name__=="__main__":
+    exit(debug())
