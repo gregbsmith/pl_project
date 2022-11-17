@@ -37,8 +37,7 @@ class Parser():
     # backtrack by saving a copy of the self.program_gen in another variable
     # with copy.deepcopy(self.program_gen)
     def parse(self):
-        """Parse a program.
-            Output a list of descriptions of errors in the program"""
+        """Parse a program. Output a list of descriptions of errors in the program"""
         self.program()
         return self.error_list
 
