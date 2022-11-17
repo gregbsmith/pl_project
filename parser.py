@@ -15,12 +15,17 @@ class Parser():
         self.line_buffer=''
         self.line_buffer_num=0
         self.next_tok=''
+        # TODO fill these lists in
+        self.specials=[]
+        self.digits=[]
+        self.uppercase-chars[]
+        self.lowercase-chars[]
 
     # TODO
     def parse(self):
         """
         Parse a program.
-        Output "valid program" or a string listing errors."""
+        Output a list of descriptions of errors in the program"""
         self.program()
         return self.error_list
 
@@ -28,11 +33,46 @@ class Parser():
     def program(self):
         pass
 
-    #TODO
     def token(self):
         """
         Store the name of the next token in the self.next_tok variable"""
-        pass
+        n=self.next_nonblank()
+        if n == '.':
+            self.next_token = '.'
+        elif n == ',':
+            self.next_token = ','
+        elif n == "'":
+            self.next_token = "'"
+        elif n == '(':
+            self.next_token = '('
+        elif n == ')':
+            self.next_token = ')'
+        elif n == '?':
+            if self.peek_ch() == '-':
+                self.next_token = '?-'
+            else:
+                self.next_token = 'special'
+        elif n == ':':
+            if self.peek_ch() == '-':
+                self.next_token = ':-'
+            else:
+                self.next_token = 'special'
+        elif n in self.specials:
+            self.next_token = 'special'
+        elif n in self.digits:
+            self.next_token = 'digit'
+        elif n in self.uppercase-chars:
+            self.next_token = 'uppercase-char'
+        elif n in self.lowercase-chars:
+            self.next_token = 'lowercase-char'
+        else: # unrecognized token
+            self.add_error('unrecognized token: '+n)
+
+    def add_error(self, message, line=self.line_num):
+        """
+        Add the error message to the list of errors that will be returned by
+        this parser."""
+        self.error_list.append("Line: "+str(line)+ "\n"+message)
 
     def next_nonblank(self):
         """
