@@ -35,7 +35,7 @@ class Parser():
 
     # TODO implement this
     # backtrack by saving a copy of the self.program_gen in another variable
-    # with copy.deepcopy(self.program_gen)
+    # by forcing generation of a list
     def parse(self):
         """Parse a program.
         Output a list of descriptions of errors in the program"""
@@ -48,15 +48,15 @@ class Parser():
         # To preserve the state of self.program_gen and allow reversion back to
         # this state, save program_gen to a backup
         local_errors = []
-        program_gen_backup = copy.deepcopy(self.program_gen)
+        program_gen_backup = list(self.program_gen)
         try:
             self.clause_list()
-        except ParserError as err:
+        except Parser.ParserError as err:
             local_errors.append(err.message)
-            self.program_gen = program_gen_backup
+            self.program_gen = iter(program_gen_backup)
         try:
             self.query()
-        except ParserError as err:
+        except Parser.ParserError as err:
             local_errors.append(err.message)
             self.error_list += local_errors
     
@@ -65,107 +65,143 @@ class Parser():
         """Subroutine for the <clause-list> symbol.
             Valid clause lists have a <clause>, optionally followed by a <clause-list>"""
         pass
+
     #TODO
     def clause(self):
+        """Subroutine for the <clause> symbol.
+            Valid clauses follow this BNF rule:
+            <clause> -> <predicate> . | <predicate> :- <predicate-list> ."""
         pass
 
     #TODO
     def query(self):
+        """Subroutine for the <query> symbol.
+            <query> -> ?- <predicate-list> ."""
         pass
 
     #TODO
     def predicate_list(self):
+        """Subroutine for the <predicate-list> symbol.
+            <predicate-list> -> <predicate> | <predicate> , <predicate-list>"""
         pass
 
     #TODO
     def predicate(self):
+        """Subroutine for <predicate>
+            <predicate> -> <atom> | <atom> ( <term-list> )
+            This rule can be simplified to:
+            <predicate> -> <atom> | <structure>"""
         pass
 
     #TODO
     def term_list(self):
+        """Subroutine for <term-list>
+            <term-list> -> <term> | <term> , <term-list>"""
         pass
 
     #TODO
     def term(self):
+        """Subroutine for <term>
+            <term> -> <atom> | <variable> | <structure> | <numeral>"""
         pass
 
     #TODO
     def structure(self):
+        """Subroutine for <structure>
+            <structure> -> <atom> ( <term-list> )"""
         pass
 
     #TODO
     def atom(self):
+        """Subroutine for <atom>
+            <atom> -> <small-atom> | ' <string> '"""
         pass
 
     #TODO
     def small_atom(self):
+        """Subroutine for <small-atom>
+            <small-atom> -> <lowercase-char> | <lowercase-char> <character-list>"""
         pass
 
     #TODO
     def variable(self):
+        """Subroutine for <variable>
+            <variable> -> <uppercase-char> | <uppercase-char> <character-list>"""
         pass
 
     #TODO
     def character_list(self):
+        """Subroutine for <character-list>
+            <character-list> -> <alphanumeric> | <alphanumeric> <character-list>"""
         pass
 
     #TODO
     def alphanumeric(self):
+        """Subroutine for <alphanumeric>
+            <alphanumeric> -> <lowercase-char> | <uppercase-char> | <digit>"""
         pass
 
     #TODO
     def lowercase_char(self):
+        """Subroutine for <lowercase-char>
+            <lowercase-char> -> a | b | c | ... | x | y | z"""
         pass
 
     #TODO
     def uppercase_char(self):
+        """Subroutine for <uppercase-char>
+            <uppercase-char> -> A | B | C | ... | X | Y | Z | _"""
         pass
 
     #TODO
     def numeral(self):
+        """Subroutine for <numeral>
+            <numeral> -> <digit> | <digit> <numeral>"""
         pass
 
     #TODO
     def digit(self):
+        """Subroutine for <digit>
+            <digit> -> 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9"""
         pass
 
     #TODO
     def string(self):
+        """Subroutine for <string>
+            <string> -> <character> | <character> <string>"""
         pass
 
-    #TODO
     def character(self):
         """Subroutine for the <character> symbol.
             Valid characters are <alphanumeric> or <special>."""
-        pass
+        n=self.peek_ch()
+        temp_gen_list=list(self.program_gen)
+        try:
+            alphanumeric()
+        except Parser.ParserError:
+            self.program_gen = iter(temp_gen_list)
+            try:
+                special()
+            except Parser.ParserError:
+                raise Parser.ParserError('"'+n+'" is not a <character> (<special> or <alphanumeric>)', self.line_num)
 
     def special(self):
         """Subroutine for the <special> symbol.
             Raise a ParserError if the token is not special."""
         n=self.token()
         if self.next_token != 'special':
-            raise ParserError('"'+n+'" belongs to token "'+self.next_token+'" not "special"',self.line_num)
+            raise Parser.ParserError('"'+n+'" belongs to token "'+self.next_token+'" not "special"',self.line_num)
 
     def peek_token(self, skip_blanks=False):
         """Retrieve and return the next token without changing the state of
         self.program_gen or the self.next_tok variable"""
-        temp_gen = copy.deepcopy(self.program_gen)
+        temp_gen = iter(list(self.program_gen))
         n=next(temp_gen)
         if skip_blanks:
             while n.isspace():
                 n=next(temp_gen)
         if n == 'EOF':
             return 'EOF'
-        elif n == '.':
-            return '.'
-        elif n==',':
-            return ','
-        elif n == "'":
-            return "'"
-        elif n == '(':
-            return '('
-        elif n == ')':
-            return ')'
         elif n in self.specials:
             return 'special'
         elif n in self.digits:
@@ -175,7 +211,7 @@ class Parser():
         elif n in self.lowercase_chars:
             return 'lowercase-char'
         else: # unrecognized token
-            raise ParserError('Unrecognized token: "' + n + '"', self.line_num)
+            raise Parser.ParserError('Unrecognized token: "' + n + '"', self.line_num)
 
     def token(self, skip_blanks=False):
         """Store the name of the next token in the self.next_tok variable
@@ -187,16 +223,6 @@ class Parser():
 
         if n == 'EOF':
             self.next_token = 'EOF'
-        elif n == '.':
-            self.next_token = '.'
-        elif n == ',':
-            self.next_token = ','
-        elif n == "'":
-            self.next_token = "'"
-        elif n == '(':
-            self.next_token = '('
-        elif n == ')':
-            self.next_token = ')'
         elif n in self.specials:
             self.next_token = 'special'
         elif n in self.digits:
@@ -206,7 +232,7 @@ class Parser():
         elif n in self.lowercase_chars:
             self.next_token = 'lowercase-char'
         else: # unrecognized token
-            raise ParserError('Unrecognized token: "' + n + '"', self.line_num)
+            raise Parser.ParserError('Unrecognized token: "' + n + '"', self.line_num)
         return n
 
     def add_error(self, message):
@@ -258,7 +284,7 @@ def debug() -> int:
             return 0
         contents = f.read()
         parser = Parser(contents)
-        output = parser.next_line()
+        output = parser.special()
         print(output)
         i+=1
     return 0
