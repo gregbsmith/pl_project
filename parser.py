@@ -18,11 +18,8 @@ class Parser():
             self.message="Line " + str(ln) + ": " + description
 
     def __init__(self, cont):
-        def prog_gen(prog):
-            for ch in prog:
-                yield ch
         self.contents = cont
-        self.program_gen=prog_gen(cont)
+        self.program_gen=iter(cont)
         self.line_num=0
         self.error_list=[]
         self.line_buffer=''
@@ -48,12 +45,12 @@ class Parser():
         # To preserve the state of self.program_gen and allow reversion back to
         # this state, save program_gen to a backup
         local_errors = []
-        program_gen_backup = list(self.program_gen)
+        program_gen_backup = copy.deepcopy(self.program_gen)
         try:
             self.clause_list()
         except Parser.ParserError as err:
             local_errors.append(err.message)
-            self.program_gen = iter(program_gen_backup)
+            self.program_gen = program_gen_backup
         try:
             self.query()
         except Parser.ParserError as err:
@@ -77,7 +74,21 @@ class Parser():
     def query(self):
         """Subroutine for the <query> symbol.
             <query> -> ?- <predicate-list> ."""
-        pass
+        n=self.peek_ch(skip_blanks=True)
+        if n != '?':
+            raise Parser.ParserError('<query> must start with "?-", not "' + n + '"', self.line_num)
+        program_gen_backup = copy.deepcopy(self.program_gen)
+        _ = self.next_nonblank()
+        if self.next_ch() != '-':
+            self.program_gen = program_gen_backup
+            raise Parser.ParserError('<query> must start with "?-", not "?' + n + '"', self.line_num)
+        # check <predicate-list>
+        self.predicate_list()
+        # check for period terminating <query>
+        n=self.peek_ch(skip_blanks=True)
+        if n != '.':
+            raise Parser.ParserError('<query must end with ".", not "' + n + '"', self.line_num)
+
 
     #TODO
     def predicate_list(self):
@@ -175,11 +186,11 @@ class Parser():
         """Subroutine for the <character> symbol.
             Valid characters are <alphanumeric> or <special>."""
         n=self.peek_ch()
-        temp_gen_list=list(self.program_gen)
+        program_gen_backup=copy.deepcopy(self.program_gen)
         try:
             alphanumeric()
         except Parser.ParserError:
-            self.program_gen = iter(temp_gen_list)
+            self.program_gen = program_gen_backup
             try:
                 special()
             except Parser.ParserError:
@@ -195,7 +206,7 @@ class Parser():
     def peek_token(self, skip_blanks=False):
         """Retrieve and return the next token without changing the state of
         self.program_gen or the self.next_tok variable"""
-        temp_gen = iter(list(self.program_gen))
+        temp_gen = copy.deepcopy(self.program_gen)
         n=next(temp_gen)
         if skip_blanks:
             while n.isspace():
@@ -246,11 +257,17 @@ class Parser():
         while n.isspace():n = self.next_ch()
         return n
 
-    def peek_ch(self):
+    def peek_ch(self, skip_blanks=False):
         """Peek at the next character from the program generator.
             Return the peeked value"""
+        peeked = []
         peek = next(self.program_gen)
-        self.program_gen = itertools.chain([peek],self.program_gen)
+        peeked.append(peek)
+        if skip_blanks:
+            while peek.isspace():
+                peek = next(self.program_gen)
+                peeked.append(peek)
+        self.program_gen = itertools.chain(peeked,self.program_gen)
         return peek
 
     def next_ch(self):
@@ -319,5 +336,4 @@ def main() -> int:
 #TODO uncomment this
 #if __name__=="__main__": exit(main())
 #delete this
-if __name__=="__main__":
-    exit(debug())
+if __name__=="__main__": exit(debug())
