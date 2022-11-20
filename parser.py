@@ -272,7 +272,7 @@ class Parser():
 
     def skip_blanks(self):
         """Skip blank space, don't return anything"""
-        n = self.peek_ch()
+        n = self.next_ch()
         while n.isspace():
             n = next_ch()
         self.program_gen = itertools.chain([n],self.program_gen)
