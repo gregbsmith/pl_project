@@ -211,9 +211,8 @@ class Parser():
         if skip_blanks:
             while n.isspace():
                 n=next(temp_gen)
-        if n == 'EOF':
-            return 'EOF'
-        elif n in self.specials:
+
+        if n in self.specials:
             return 'special'
         elif n in self.digits:
             return 'digit'
@@ -232,9 +231,7 @@ class Parser():
         else:
             n=self.next_ch()
 
-        if n == 'EOF':
-            self.next_token = 'EOF'
-        elif n in self.specials:
+        if n in self.specials:
             self.next_token = 'special'
         elif n in self.digits:
             self.next_token = 'digit'
