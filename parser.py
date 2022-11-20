@@ -16,9 +16,10 @@ class Parser():
             the line number where this exception happened"""
         def __init__(self, description, ln):
             self.message="Line " + str(ln) + ": " + description
-
-    class ErrorEOF(Parser.ParserError):
-        """Exception raised by the parser when EOF is encountered"""
+    
+    class TerminalError(ParserError):
+        """Exception raised by the parser that will terminate the parsing of
+        the current file; usually when unexpected end of file is found."""
         def __init__(self, d, l):
             super().__init__(d, l)
 
@@ -36,19 +37,18 @@ class Parser():
         self.lowercase_chars=[chr(i) for i in range(97,123)]
 
     # backtrack by saving a copy of the self.program_gen in another variable
-    # by forcing generation of a list
     def parse(self):
         """Parse a program.
         Output a list of descriptions of errors in the program"""
         try:
             self.skip_blanks()
-        except StopIteration:
+        except Parser.TerminalError:
             self.error_list.append("Program was the empty string")
             return self.error_list
         try:
             self.program()
-        except Parser.ErrorEOF as eof:
-            self.error_list.append(eof.message)
+        except Parser.TerminalError as terr:
+            self.error_list.append(terr.message)
         return self.error_list
 
     def program(self):
@@ -64,11 +64,25 @@ class Parser():
             local_errors.append(err.message)
             self.program_gen = program_gen_backup
         try:
+            self.skip_blanks()
+        except Parser.TerminalError:
+            local_errors.append('valid programs must have a <query>')
+            self.error_list += local_errors
+            return
+        try:
             self.query()
         except Parser.ParserError as err:
             local_errors.append(err.message)
             self.error_list += local_errors
+        try:
+            self.skip_blanks()
+        except Parser.TerminalError:
+            # This is good, the file is done
+            return
+        local_errors.append('After parsing the program, the following remained in the file:\n'+''.join(self.program_gen))
+        self.error_list += local_errors
     
+    #TODO
     def clause_list(self):
         """Subroutine for the <clause-list> symbol.
             Valid clause lists have a <clause>, optionally followed by a <clause-list>"""
@@ -81,10 +95,11 @@ class Parser():
             <clause> -> <predicate> . | <predicate> :- <predicate-list> ."""
         pass
 
-    #TODO
     def query(self):
         """Subroutine for the <query> symbol.
             <query> -> ?- <predicate-list> ."""
+        # skipping blanks here is redundant because that has already been
+        # taken care of by the program() subroutine
         n=self.peek_ch(skip_blanks=True)
         if n != '?':
             raise Parser.ParserError('<query> must start with "?-", not "' + n + '"', self.line_num)
@@ -93,13 +108,16 @@ class Parser():
         if self.next_ch() != '-':
             self.program_gen = program_gen_backup
             raise Parser.ParserError('<query> must start with "?-", not "?' + n + '"', self.line_num)
-        # check <predicate-list>
+        # check <predicate-list>, but skip blanks first
+        self.skip_blanks()
         self.predicate_list()
         # check for period terminating <query>
         n=self.peek_ch(skip_blanks=True)
         if n != '.':
             raise Parser.ParserError('<query must end with ".", not "' + n + '"', self.line_num)
-
+        _ = self.next_nonblank() # get rid of the period
+        # not skipping blanks after the period, because this is checked in the
+        # program() subroutine
 
     #TODO
     def predicate_list(self):
@@ -133,11 +151,22 @@ class Parser():
             <structure> -> <atom> ( <term-list> )"""
         pass
 
-    #TODO
     def atom(self):
         """Subroutine for <atom>
             <atom> -> <small-atom> | ' <string> '"""
-        pass
+        self.skip_blanks()
+        if self.peek_ch() == "'":
+            _ = self.next_ch()
+            try:
+                self.string()
+            except StopIteration:
+                raise Parser.TerminalError('Encountered EOF while parsing string', self.line_num)
+            except Parser.ParserError as err:
+                if self.peek_ch() == "'":
+                    return
+                else: raise err
+        else: #TODO small_atom()
+            pass
 
     #TODO
     def small_atom(self):
@@ -188,8 +217,7 @@ class Parser():
         p_tok=self.peek_token()
         if p_tok != 'digit':
             raise Parser.ParserError('Expected "digit", found "'+p_tok+'" instead.', self.line_num)
-        else: self.token()
-        pass
+        self.token()
 
     def string(self):
         """Subroutine for <string>
@@ -200,8 +228,6 @@ class Parser():
             self.string()
         except Parser.ParserError:
             self.program_gen = program_gen_backup
-        except StopIteration:
-            raise Parser.ErrorEOF('Encountered EOF while parsing string', self.line_num)
 
     def character(self):
         """Subroutine for the <character> symbol.
@@ -220,9 +246,11 @@ class Parser():
     def special(self):
         """Subroutine for the <special> symbol.
             Raise a ParserError if the token is not special."""
-        n=self.token()
-        if self.next_token != 'special':
-            raise Parser.ParserError('"'+n+'" belongs to token "'+self.next_token+'" not "special"',self.line_num)
+        peeked=self.peek_token()
+        if peeked != 'special':
+            raise Parser.ParserError('"'+self.peek_ch()+'" belongs to token "'+peeked+'" not "special"',self.line_num)
+        else:
+            self.token()
 
     def peek_token(self, skip_blanks=False):
         """Retrieve and return the next token without changing the state of
@@ -277,9 +305,12 @@ class Parser():
 
     def skip_blanks(self):
         """Skip blank space, don't return anything"""
-        n = self.next_ch()
-        while n.isspace():
-            n = next_ch()
+        try:
+            n = self.next_ch()
+            while n.isspace():
+                n = next_ch()
+        except StopIteration:
+            raise Parser.TerminalError("Reached end of file while skipping blank space", self.line_num)
         self.program_gen = itertools.chain([n],self.program_gen)
 
     def peek_ch(self, skip_blanks=False):
