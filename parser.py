@@ -41,6 +41,11 @@ class Parser():
         """Parse a program.
         Output a list of descriptions of errors in the program"""
         try:
+            self.skip_blanks()
+        except StopIteration:
+            self.error_list.append("Program was the empty string")
+            return self.error_list
+        try:
             self.program()
         except Parser.ErrorEOF as eof:
             self.error_list.append(eof.message)
