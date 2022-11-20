@@ -2,6 +2,10 @@
 # Gregory Smith     b00095534
 # Joseph Press      b00095348
 # Abdu Sallouh      b00087818
+# TODO
+# * the restorations of self.program_gen also need to be done with
+# copy.deepcopy
+# * the self.line_num variable should also be backed up
 import itertools
 import copy
 
@@ -82,18 +86,38 @@ class Parser():
         local_errors.append('After parsing the program, the following remained in the file:\n'+''.join(self.program_gen))
         self.error_list += local_errors
     
-    #TODO
     def clause_list(self):
         """Subroutine for the <clause-list> symbol.
             Valid clause lists have a <clause>, optionally followed by a <clause-list>"""
-        pass
+        self.skip_blanks()
+        self.clause()
+        try:
+            self.clause_list()
+        except Parser.ParserError:
+            pass
 
-    #TODO
     def clause(self):
         """Subroutine for the <clause> symbol.
             Valid clauses follow this BNF rule:
             <clause> -> <predicate> . | <predicate> :- <predicate-list> ."""
-        pass
+        self.skip_blanks()
+        self.predicate()
+        self.skip_blanks()
+
+        if self.peek_ch() == ':':
+            #it should be a predicate list
+            self.token()
+            if self.peek_ch() != '-':
+                raise Parser.ParserError('clause must have ":-" between predicate and predicate list', self.line_num)
+            else:
+                self.predicate_list()
+
+        self.skip_blanks()
+
+        if self.peek_ch() == '.':
+            self.token()
+        else:
+            raise Parser.ParserError('"." must come at the end of a clause', self.line_num)
 
     def query(self):
         """Subroutine for the <query> symbol.
@@ -119,42 +143,92 @@ class Parser():
         # not skipping blanks after the period, because this is checked in the
         # program() subroutine
 
-    #TODO
     def predicate_list(self):
         """Subroutine for the <predicate-list> symbol.
             <predicate-list> -> <predicate> | <predicate> , <predicate-list>"""
-        pass
+        self.skip_blanks()
+        self.predicate()
+        self.skip_blanks()
+        if self.peek_ch() == ',':
+            self.next_ch()
+            # predicate list again
+            self.predicate_list()
 
-    #TODO
     def predicate(self):
         """Subroutine for <predicate>
             <predicate> -> <atom> | <atom> ( <term-list> )
             This rule can be simplified to:
             <predicate> -> <atom> | <structure>"""
-        pass
+        self.skip_blanks()
+        program_gen_backup = copy.deepcopy(self.program_gen)
+        try:
+            self.atom()
+        except Parser.ParserError as err1:
+            self.program_gen = program_gen_backup
+            try:
+                self.structure()
+            except Parser.ParserError as err2:
+                self.program_gen = program_gen_backup
+                raise Parser.ParserError("Could not parse as an atom or structure", self.line_num)
 
-    #TODO
     def term_list(self):
         """Subroutine for <term-list>
             <term-list> -> <term> | <term> , <term-list>"""
+        self.skip_blanks()
+        self.term()
+        self.skip_blanks()
+        if self.peek_ch() == ',':
+            self.next_ch()
+            self.term_list()
         pass
 
-    #TODO
     def term(self):
         """Subroutine for <term>
             <term> -> <atom> | <variable> | <structure> | <numeral>"""
-        pass
+        self.skip_blanks()
+        p_gen_backup = copy.deepcopy(self.program_gen)
+        try:
+            self.atom()
+        except Parser.ParserError:
+            self.program_gen = p_gen_backup
+            try:
+                self.variable()
+            except Parser.ParserError:
+                self.program_gen = p_gen_backup
+                try:
+                    self.structure()
+                except Parser.ParserError:
+                    self.program_gen = p_gen_backup
+                    try:
+                        self.numeral()
+                    except Parser.ParserError:
+                        self.program_gen = p_gen_backup
+                        raise Parser.ParserError("could not resolve to a term", self.line_num)
 
-    #TODO
     def structure(self):
         """Subroutine for <structure>
             <structure> -> <atom> ( <term-list> )"""
-        pass
+        pgbackup = copy.deepcopy(self.program_gen)
+        self.skip_blanks()
+        self.atom()
+        self.skip_blanks()
+        if self.peek_ch() != '(':
+            self.program_gen = copy.deepcopy(pgbackup)
+            raise Parser.ParserError('structure must have parentheses', self.line_num)
+        self.next_ch()
+        self.skip_blanks()
+        self.term_list()
+        self.skip_blanks()
+        if self.peek_ch() != ')':
+            self.program_gen = copy.deepcopy(pgbackup)
+            raise Parser.ParserError('must close parentheses on structure',self.line_num)
+        self.next_ch()
 
     def atom(self):
         """Subroutine for <atom>
             <atom> -> <small-atom> | ' <string> '"""
         self.skip_blanks()
+        pgb = copy.deepcopy(self.program_gen)
         if self.peek_ch() == "'":
             _ = self.next_ch()
             try:
@@ -164,9 +238,15 @@ class Parser():
             except Parser.ParserError as err:
                 if self.peek_ch() == "'":
                     return
-                else: raise err
-        else: #TODO small_atom()
-            pass
+                else:
+                    self.program_gen = copy.deepcopy(pgb)
+                    raise err
+        else:
+            try:
+                self.small_atom()
+            except Parser.ParserError as err:
+                self.program_gen = copy.deepcopy(pgb)
+                raise err
 
     def small_atom(self):
         """Subroutine for <small-atom>
