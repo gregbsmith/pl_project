@@ -64,7 +64,6 @@ class Parser():
             local_errors.append(err.message)
             self.error_list += local_errors
     
-    #TODO
     def clause_list(self):
         """Subroutine for the <clause-list> symbol.
             Valid clause lists have a <clause>, optionally followed by a <clause-list>"""
@@ -270,6 +269,13 @@ class Parser():
         n = self.next_ch()
         while n.isspace():n = self.next_ch()
         return n
+
+    def skip_blanks(self):
+        """Skip blank space, don't return anything"""
+        n = self.peek_ch()
+        while n.isspace():
+            n = next_ch()
+        self.program_gen = itertools.chain([n],self.program_gen)
 
     def peek_ch(self, skip_blanks=False):
         """Peek at the next character from the program generator.
