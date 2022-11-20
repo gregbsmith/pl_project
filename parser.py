@@ -168,47 +168,70 @@ class Parser():
         else: #TODO small_atom()
             pass
 
-    #TODO
     def small_atom(self):
         """Subroutine for <small-atom>
             <small-atom> -> <lowercase-char> | <lowercase-char> <character-list>"""
+        self.skip_blanks()
+        if self.peek_token() != 'lowercase-char':
+            raise Parser.ParserError('small atoms must start with lowercase chars, not "' + self.peek_ch() + '"',self.line_num)
+        else:
+            self.token()
+            self.character_list()
         pass
 
-    #TODO
     def variable(self):
         """Subroutine for <variable>
             <variable> -> <uppercase-char> | <uppercase-char> <character-list>"""
-        pass
+        self.skip_blanks()
+        if self.peek_token() != 'uppercase-char':
+            raise Parser.ParserError('Variables must start with uppercase chars, not "' + self.peek_ch() + '"', self.line_num)
+        else:
+            self.token()
+            self.character_list()
 
-    #TODO
     def character_list(self):
         """Subroutine for <character-list>
             <character-list> -> <alphanumeric> | <alphanumeric> <character-list>"""
-        pass
+        program_gen_backup = copy.deepcopy(self.program_gen)
+        try:
+            self.alphanumeric()
+        except Parser.ParserError:
+            self.program_gen = program_gen_backup
+            return
+        self.character_list()
 
-    #TODO
     def alphanumeric(self):
         """Subroutine for <alphanumeric>
             <alphanumeric> -> <lowercase-char> | <uppercase-char> | <digit>"""
-        pass
+        p_tok = self.peek_token()
+        if p_tok != 'lowercase-char' and p_tok != 'uppercase-char' and p_tok != 'digit':
+            raise Parser.ParserError('Invalid alphanumeric "'+self.peek_ch()+'"',self.line_num)
 
-    #TODO
     def lowercase_char(self):
         """Subroutine for <lowercase-char>
             <lowercase-char> -> a | b | c | ... | x | y | z"""
-        pass
+        if self.peek_token() == 'lowercase-char':
+            self.token()
+        else:
+            raise Parser.ParserError('"'+self.peek_ch() + '" is not a lowercase char', self.line_num)
 
-    #TODO
     def uppercase_char(self):
         """Subroutine for <uppercase-char>
             <uppercase-char> -> A | B | C | ... | X | Y | Z | _"""
+        if self.peek_token() == 'uppercase-char':
+            self.token()
+        else:
+            raise Parser.ParserError('"'+self.peek_ch() + '" is not an uppercase char', self.line_num)
         pass
 
-    #TODO
     def numeral(self):
         """Subroutine for <numeral>
             <numeral> -> <digit> | <digit> <numeral>"""
-        pass
+        self.digit()
+        try:
+            self.numeral()
+        except Parser.ParserError:
+            pass
 
     def digit(self):
         """Subroutine for <digit>
