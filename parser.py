@@ -17,6 +17,11 @@ class Parser():
         def __init__(self, description, ln):
             self.message="Line " + str(ln) + ": " + description
 
+    class ErrorEOF(Parser.ParserError):
+        """Exception raised by the parser when EOF is encountered"""
+        def __init__(self, d, l):
+            super().__init__(d, l)
+
     def __init__(self, cont):
         self.contents = cont
         self.program_gen=iter(cont)
@@ -30,13 +35,15 @@ class Parser():
         self.uppercase_chars=[chr(i) for i in range(65,91)]+['_']
         self.lowercase_chars=[chr(i) for i in range(97,123)]
 
-    # TODO implement this
     # backtrack by saving a copy of the self.program_gen in another variable
     # by forcing generation of a list
     def parse(self):
         """Parse a program.
         Output a list of descriptions of errors in the program"""
-        self.program()
+        try:
+            self.program()
+        except Parser.ErrorEOF as eof:
+            self.error_list.append(eof.message)
         return self.error_list
 
     def program(self):
@@ -170,17 +177,27 @@ class Parser():
             <numeral> -> <digit> | <digit> <numeral>"""
         pass
 
-    #TODO
     def digit(self):
         """Subroutine for <digit>
-            <digit> -> 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9"""
+            <digit> -> 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+            Do not skip blanks"""
+        p_tok=self.peek_token()
+        if p_tok != 'digit':
+            raise Parser.ParserError('Expected "digit", found "'+p_tok+'" instead.', self.line_num)
+        else: self.token()
         pass
 
-    #TODO
     def string(self):
         """Subroutine for <string>
             <string> -> <character> | <character> <string>"""
-        pass
+        self.character()
+        program_gen_backup = copy.deepcopy(self.program_gen)
+        try:
+            self.string()
+        except Parser.ParserError:
+            self.program_gen = program_gen_backup
+        except StopIteration:
+            raise Parser.ErrorEOF('Encountered EOF while parsing string', self.line_num)
 
     def character(self):
         """Subroutine for the <character> symbol.
