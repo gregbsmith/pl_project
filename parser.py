@@ -6,6 +6,8 @@
 # * the restorations of self.program_gen also need to be done with
 # copy.deepcopy
 # * the self.line_num variable should also be backed up
+# * debug each subroutine and make sure they all fit together predictably to
+# give the desired functionality
 import itertools
 import copy
 
@@ -346,9 +348,11 @@ class Parser():
             except Parser.ParserError:
                 raise Parser.ParserError('"'+n+'" is not a <character> (<special> or <alphanumeric>)', self.line_num)
 
+    # debugged
     def special(self):
         """Subroutine for the <special> symbol.
-            Raise a ParserError if the token is not special."""
+            Raise a ParserError and do not consume character if the token is not special.
+            "consume" the character if it is special"""
         peeked=self.peek_token()
         if peeked != 'special':
             raise Parser.ParserError('"'+self.peek_ch()+'" belongs to token "'+peeked+'" not "special"',self.line_num)
@@ -449,6 +453,13 @@ class Parser():
             n=self.next_ch()
         self.line_buffer+='.'
         return self.line_buffer
+
+    def whats_left(self):
+        """debug function to see what's remaining in the self.program_gen
+        iterator"""
+        remaining = ''.join(self.program_gen)
+        self.program_gen = iter(remaining)
+        return remaining
 
 # debugging:
 def debug() -> int:
