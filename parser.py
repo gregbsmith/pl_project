@@ -36,7 +36,7 @@ class Parser():
         self.error_list=[]
         self.line_buffer=''
         self.line_buffer_num=0
-        self.next_tok=''
+        self.next_token=''
         self.specials=['+','-','*','/',"\\",'^','~',':','.','?',' ','#','$','&']
         self.digits=[str(i) for i in range(10)]
         self.uppercase_chars=[chr(i) for i in range(65,91)]+['_']
@@ -289,39 +289,51 @@ class Parser():
         if p_tok != 'lowercase-char' and p_tok != 'uppercase-char' and p_tok != 'digit':
             raise Parser.ParserError('Invalid alphanumeric "'+self.peek_ch()+'"',self.line_num)
 
+    # debugged
     def lowercase_char(self):
         """Subroutine for <lowercase-char>
-            <lowercase-char> -> a | b | c | ... | x | y | z"""
+            <lowercase-char> -> a | b | c | ... | x | y | z
+            do not catch StopIteration
+            do not skip blanks"""
         if self.peek_token() == 'lowercase-char':
             self.token()
         else:
             raise Parser.ParserError('"'+self.peek_ch() + '" is not a lowercase char', self.line_num)
 
+    # debugged
     def uppercase_char(self):
         """Subroutine for <uppercase-char>
-            <uppercase-char> -> A | B | C | ... | X | Y | Z | _"""
+            <uppercase-char> -> A | B | C | ... | X | Y | Z | _
+            do not catch StopIteration
+            do not skip blanks"""
         if self.peek_token() == 'uppercase-char':
             self.token()
         else:
             raise Parser.ParserError('"'+self.peek_ch() + '" is not an uppercase char', self.line_num)
-        pass
 
+    # debugged
     def numeral(self):
         """Subroutine for <numeral>
-            <numeral> -> <digit> | <digit> <numeral>"""
+            <numeral> -> <digit> | <digit> <numeral>
+            catches StopIteration on recursive calls (and passes on it)"""
         self.digit()
         try:
             self.numeral()
         except Parser.ParserError:
             pass
+        except StopIteration:
+            pass # this is the first time we've done this for tail recursive calls
+            # this may be a good pattern to reuse
 
+    # debugged
     def digit(self):
         """Subroutine for <digit>
             <digit> -> 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
-            Do not skip blanks"""
+            Do not skip blanks
+            Do not catch StopIteration"""
         p_tok=self.peek_token()
         if p_tok != 'digit':
-            raise Parser.ParserError('Expected "digit", found "'+p_tok+'" instead.', self.line_num)
+            raise Parser.ParserError('Expected <digit>, found "'+self.peek_ch()+'" instead.', self.line_num)
         self.token()
 
     def string(self):
@@ -359,9 +371,11 @@ class Parser():
         else:
             self.token()
 
+    # debugged
     def peek_token(self, skip_blanks=False):
         """Retrieve and return the next token without changing the state of
-        self.program_gen or the self.next_tok variable"""
+        self.program_gen or the self.next_tok variable
+            Do not catch StopIteration"""
         temp_gen = copy.deepcopy(self.program_gen)
         n=next(temp_gen)
         if skip_blanks:
@@ -376,12 +390,18 @@ class Parser():
             return 'uppercase-char'
         elif n in self.lowercase_chars:
             return 'lowercase-char'
+        elif n == '\n': # don't want to raise an error for newlines
+            return 'newline'
         else: # unrecognized token
-            raise Parser.ParserError('Unrecognized token: "' + n + '"', self.line_num)
-
+            return 'unrecognized'
+    
+    # debugged
     def token(self, skip_blanks=False):
         """Store the name of the next token in the self.next_tok variable
-            Return the character n that was tokenized."""
+            Return the character n that was tokenized.
+            Eat the next character, no matter what.
+            Do not catch StopIteration
+            If an unrecognized character is found, simply add an error message and return the next recognized token"""
         if skip_blanks:
             n=self.next_nonblank()
         else:
@@ -395,35 +415,44 @@ class Parser():
             self.next_token = 'uppercase-char'
         elif n in self.lowercase_chars:
             self.next_token = 'lowercase-char'
+        elif n == '\n': # newlines aren't in the grammar, but we do not want to add errors for them
+            self.next_token = 'newline'
         else: # unrecognized token
-            raise Parser.ParserError('Unrecognized token: "' + n + '"', self.line_num)
+            self.add_error('Line '+ str(self.line_num)+': Unrecognized token: "' + n + '"')
+            self.token(skip_blanks)
         return n
 
+    # debugged
     def add_error(self, message):
         """Add the error message to the list of errors that will be returned by
         this parser."""
         self.error_list.append(message)
 
+    # debugged
     def next_nonblank(self):
-        "Return the next non blank character from self.program_gen"
+        """Return the next non blank character from self.program_gen
+            Do not catch StopIteration"""
         n = self.next_ch()
         while n.isspace():n = self.next_ch()
         return n
 
+    # debugged
     def skip_blanks(self):
-        """Skip blank space, don't return anything"""
-        try:
+        """Skip blank space, don't return anything
+            Do not catch StopIteration"""
+        n = self.next_ch()
+        while n.isspace():
             n = self.next_ch()
-            while n.isspace():
-                n = next_ch()
-        except StopIteration:
-            raise Parser.TerminalError("Reached end of file while skipping blank space", self.line_num)
         self.program_gen = itertools.chain([n],self.program_gen)
 
+    # debugged
     def peek_ch(self, skip_blanks=False):
         """Peek at the next character from the program generator.
-            Return the peeked value"""
+            Return the peeked value
+            Do not catch StopIteration"""
         peeked = []
+        # This function uses next(self.program_gen) rather than self.next_ch()
+        # because we do not need to increment the line number here
         peek = next(self.program_gen)
         peeked.append(peek)
         if skip_blanks:
@@ -433,27 +462,30 @@ class Parser():
         self.program_gen = itertools.chain(peeked,self.program_gen)
         return peek
 
+    # debugged
     def next_ch(self):
-        "Call next(self.program_gen), increment self.line_num if necessary"
-        try:
-            n=next(self.program_gen)
-        except StopIteration:
-            return 'EOF'
+        """Call next(self.program_gen), increment self.line_num if necessary
+            Do not catch StopIteration"""
+        n=next(self.program_gen)
         if n == '\n':
             self.line_num += 1
         return n
     
+    # debugged
     def next_line(self):
-        "Set the self.line_buffer variable by reading until the next period."
+        """Set the self.line_buffer variable by reading until the next period.
+            Do not catch StopIteration"""
         self.line_buffer = ''
         self.line_buffer_num=self.line_num
         n=self.next_nonblank()
+        # TODO: This loop becomes infinite if it runs into the end of the file
         while n!='.':
             self.line_buffer+=n
             n=self.next_ch()
         self.line_buffer+='.'
         return self.line_buffer
 
+    #debugged
     def whats_left(self):
         """debug function to see what's remaining in the self.program_gen
         iterator"""
@@ -461,7 +493,6 @@ class Parser():
         self.program_gen = iter(remaining)
         return remaining
 
-# debugging:
 def debug() -> int:
     i = 1
     while True: # loop until file open fails
@@ -475,7 +506,6 @@ def debug() -> int:
         print(output)
         i+=1
     return 0
-
 
 # main function
 # reads input files numbered 1.txt and up, parses them and gives output
