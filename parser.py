@@ -22,6 +22,8 @@ class Parser():
             the line number where this exception happened"""
         def __init__(self, description, ln):
             self.message="Line " + str(ln) + ": " + description
+        def __str__(self):
+            return self.message
     
     class TerminalError(ParserError):
         """Exception raised by the parser that will terminate the parsing of
@@ -226,31 +228,31 @@ class Parser():
             raise Parser.ParserError('must close parentheses on structure',self.line_num)
         self.next_ch()
 
+    # debugged
     def atom(self):
         """Subroutine for <atom>
             <atom> -> <small-atom> | ' <string> '
-            Skip leading blanks
-            Do not catch StopIteration"""
-        self.skip_blanks()
-        pgb = copy.deepcopy(self.program_gen)
+            Do not skip leading blanks
+            Do not catch StopIteration (Should not reach EOF while parsing atom)"""
+        # may need to back up self.program_gen
         if self.peek_ch() == "'":
-            _ = self.next_ch()
+            # we're trying to match a string
+            self.token()
+            # may need try/except here
             try:
                 self.string()
             except StopIteration:
-                raise Parser.TerminalError('Encountered EOF while parsing string', self.line_num)
-            except Parser.ParserError as err:
-                if self.peek_ch() == "'":
-                    return
-                else:
-                    self.program_gen = copy.deepcopy(pgb)
-                    raise err
+                raise StopIteration("Line "+str(self.line_num)+": reached eof while parsing string")
+            pkch = self.peek_ch()
+            if pkch == '\n':
+                raise Parser.ParserError("reached newline while parsing <string>", self.line_num)
+            elif pkch != "'":
+                raise Parser.ParserError('<string> must be enclosed in single quotes; "'+
+                pkch+'" not allowed in <string>', self.line_num)
+            self.token()
         else:
-            try:
-                self.small_atom()
-            except Parser.ParserError as err:
-                self.program_gen = copy.deepcopy(pgb)
-                raise err
+            # we're looking to match a small-atom
+            self.small_atom()
 
     # debugged
     def small_atom(self):
