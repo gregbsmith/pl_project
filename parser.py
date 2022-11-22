@@ -90,14 +90,24 @@ class Parser():
         local_errors.append('After parsing the program, the following remained in the file:\n'+''.join(self.program_gen))
         self.error_list += local_errors
     
+    # debugged
     def clause_list(self):
         """Subroutine for the <clause-list> symbol.
-            Valid clause lists have a <clause>, optionally followed by a <clause-list>"""
-        self.skip_blanks()
+            Valid clause lists have a <clause>, optionally followed by a <clause-list>
+            Do not catch StopIteration in call to self.clause()"""
+        # no need to skip blanks; clauses must start with predicates, and predicate()
+        # skips leading blanks
         self.clause()
+        #pgb = copy.deepcopy(self.program_gen)
+        try:
+            self.skip_blanks()
+        except StopIteration:
+            return
+
         try:
             self.clause_list()
         except Parser.ParserError:
+            #self.program_gen = copy.deepcopy(pgb)
             pass
 
     # debugged
