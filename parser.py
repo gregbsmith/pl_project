@@ -175,58 +175,87 @@ class Parser():
                 self.program_gen = program_gen_backup
                 raise Parser.ParserError("Could not parse as an atom or structure", self.line_num)
 
+    # debugged
     def term_list(self):
         """Subroutine for <term-list>
-            <term-list> -> <term> | <term> , <term-list>"""
-        self.skip_blanks()
+            <term-list> -> <term> | <term> , <term-list>
+            Do not catch StopIteration
+            leading blanks will be skipped in self.term() function"""
         self.term()
-        self.skip_blanks()
-        if self.peek_ch() == ',':
-            self.next_ch()
-            self.term_list()
-        pass
+        if self.peek_ch(skip_blanks=True) == ',':
+            self.token(skip_blanks=True)
+            try:
+                self.term_list()
+            except Parser.ParserError:
+                pass
 
+    # debugged
     def term(self):
         """Subroutine for <term>
-            <term> -> <atom> | <variable> | <structure> | <numeral>"""
+            <term> -> <atom> | <variable> | <structure> | <numeral>
+            Must skip leading blanks"""
+        # copy.deepcopy is definitely needed here for pgb restorations because it can
+        # be restored and modified many times
+        pgb_withblanks = copy.deepcopy(self.program_gen)
         self.skip_blanks()
-        p_gen_backup = copy.deepcopy(self.program_gen)
+        pgb = copy.deepcopy(self.program_gen)
         try:
-            self.atom()
+            self.structure()
         except Parser.ParserError:
-            self.program_gen = p_gen_backup
+            self.program_gen = copy.deepcopy(pgb)
             try:
-                self.variable()
+                self.numeral()
             except Parser.ParserError:
-                self.program_gen = p_gen_backup
+                self.program_gen = copy.deepcopy(pgb)
                 try:
-                    self.structure()
+                    self.variable()
                 except Parser.ParserError:
-                    self.program_gen = p_gen_backup
+                    self.program_gen = copy.deepcopy(pgb)
                     try:
-                        self.numeral()
+                        self.atom()
                     except Parser.ParserError:
-                        self.program_gen = p_gen_backup
+                        self.program_gen = copy.deepcopy(pgb_withblanks)
                         raise Parser.ParserError("could not resolve to a term", self.line_num)
 
+    # debugged
     def structure(self):
         """Subroutine for <structure>
-            <structure> -> <atom> ( <term-list> )"""
-        pgbackup = copy.deepcopy(self.program_gen)
-        self.skip_blanks()
-        self.atom()
-        self.skip_blanks()
+            <structure> -> <atom> ( <term-list> )
+            Do not skip leading blanks
+            Do not catch StopIteration"""
+        # This subroutine involves calling multiple different subroutines.
+        # It should succeed fully and "eat" the proper characters, or fail entirely.
+        # Therefore, it is necessary to save and restore a copy of self.program_gen
+        # copy.deepcopy may not be needed here for RESTORATION only
+        pgb = copy.deepcopy(self.program_gen)
+        
+        try:
+            self.atom()
+        except Parser.ParserError as perr:
+            self.program_gen = copy.deepcopy(pgb)
+            raise perr
+        
+        try:
+            self.skip_blanks()
+        except StopIteration:
+            raise StopIteration("Line " + str(self.line_num) + ": reached EOF in <structure> after <atom> before ( <term-list> )")
         if self.peek_ch() != '(':
-            self.program_gen = copy.deepcopy(pgbackup)
-            raise Parser.ParserError('structure must have parentheses', self.line_num)
-        self.next_ch()
-        self.skip_blanks()
-        self.term_list()
-        self.skip_blanks()
-        if self.peek_ch() != ')':
-            self.program_gen = copy.deepcopy(pgbackup)
-            raise Parser.ParserError('must close parentheses on structure',self.line_num)
-        self.next_ch()
+            self.program_gen = copy.deepcopy(pgb)
+            raise Parser.ParserError('<structure> must have <term-list> enclosed in parentheses', self.line_num)
+        
+        self.token()
+        
+        try:
+            # do not need to skip blanks; self.term() function skips leading blanks
+            self.term_list()
+        except Parser.ParserError as perr:
+            self.program_gen = copy.deepcopy(pgb)
+            raise perr
+        
+        if self.peek_ch(skip_blanks=True) != ')':
+            self.program_gen = copy.deepcopy(pgb)
+            raise Parser.ParserError('must close parentheses around <term-list> in <structure>',self.line_num)
+        self.token(skip_blanks=True)
 
     # debugged
     def atom(self):
