@@ -158,6 +158,7 @@ class Parser():
             # predicate list again
             self.predicate_list()
 
+    # debugged
     def predicate(self):
         """Subroutine for <predicate>
             <predicate> -> <atom> | <atom> ( <term-list> )
@@ -165,16 +166,16 @@ class Parser():
             <predicate> -> <structure> | <atom>
             must skip leading blanks
             Do not catch StopIteration"""
-        self.skip_blanks()
         program_gen_backup = copy.deepcopy(self.program_gen)
+        self.skip_blanks()
         try:
-            self.atom()
-        except Parser.ParserError as err1:
-            self.program_gen = program_gen_backup
+            self.structure()
+        except Parser.ParserError:
+            self.program_gen = copy.deepcopy(program_gen_backup)
             try:
-                self.structure()
-            except Parser.ParserError as err2:
-                self.program_gen = program_gen_backup
+                self.atom()
+            except Parser.ParserError:
+                self.program_gen = copy.deepcopy(program_gen_backup)
                 raise Parser.ParserError("Could not parse as an atom or structure", self.line_num)
 
     # debugged
