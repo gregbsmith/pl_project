@@ -228,7 +228,9 @@ class Parser():
 
     def atom(self):
         """Subroutine for <atom>
-            <atom> -> <small-atom> | ' <string> '"""
+            <atom> -> <small-atom> | ' <string> '
+            Skip leading blanks
+            Do not catch StopIteration"""
         self.skip_blanks()
         pgb = copy.deepcopy(self.program_gen)
         if self.peek_ch() == "'":
@@ -250,26 +252,35 @@ class Parser():
                 self.program_gen = copy.deepcopy(pgb)
                 raise err
 
+    # debugged
     def small_atom(self):
         """Subroutine for <small-atom>
-            <small-atom> -> <lowercase-char> | <lowercase-char> <character-list>"""
-        self.skip_blanks()
-        if self.peek_token() != 'lowercase-char':
-            raise Parser.ParserError('small atoms must start with lowercase chars, not "' + self.peek_ch() + '"',self.line_num)
-        else:
-            self.token()
+            <small-atom> -> <lowercase-char> | <lowercase-char> <character-list>
+            Do not catch StopIteration
+            Do not skip leading blanks"""
+        try:
+            self.lowercase_char()
+        except Parser.ParserError:
+            raise Parser.ParserError('<small_atom> must start with <lowercase-char>, not "'+self.peek_ch()+'"',self.line_num)
+        try:
             self.character_list()
-        pass
+        except Parser.ParserError:
+            pass
 
+    # debugged
     def variable(self):
         """Subroutine for <variable>
-            <variable> -> <uppercase-char> | <uppercase-char> <character-list>"""
-        self.skip_blanks()
-        if self.peek_token() != 'uppercase-char':
-            raise Parser.ParserError('Variables must start with uppercase chars, not "' + self.peek_ch() + '"', self.line_num)
-        else:
-            self.token()
+            <variable> -> <uppercase-char> | <uppercase-char> <character-list>
+            Do not catch StopIteration
+            Do not skip leading blanks"""
+        try:
+            self.uppercase_char()
+        except Parser.ParserError:
+            raise Parser.ParserError('<variable> must start with <uppercase-char>, not "'+self.peek_ch()+'"',self.line_num)
+        try:
             self.character_list()
+        except Parser.ParserError:
+            pass
 
     # debugged
     def character_list(self):
