@@ -147,16 +147,21 @@ class Parser():
         # not skipping blanks after the period, because this is checked in the
         # program() subroutine
 
+    # debugged
     def predicate_list(self):
         """Subroutine for the <predicate-list> symbol.
-            <predicate-list> -> <predicate> | <predicate> , <predicate-list>"""
-        self.skip_blanks()
+            <predicate-list> -> <predicate> | <predicate> , <predicate-list>
+            No need to skip leading blanks; predicate function does this"""
+        pgb = copy.deepcopy(self.program_gen)
         self.predicate()
-        self.skip_blanks()
-        if self.peek_ch() == ',':
-            self.next_ch()
+        if self.peek_ch(skip_blanks=True) == ',':
+            self.token(skip_blanks=True)
             # predicate list again
-            self.predicate_list()
+            try:
+                self.predicate_list()
+            except Parser.ParserError as perr:
+                self.program_gen = copy.deepcopy(pgb)
+                raise perr
 
     # debugged
     def predicate(self):
@@ -176,7 +181,7 @@ class Parser():
                 self.atom()
             except Parser.ParserError:
                 self.program_gen = copy.deepcopy(program_gen_backup)
-                raise Parser.ParserError("Could not parse as an atom or structure", self.line_num)
+                raise Parser.ParserError("Could not parse as a predicate (atom or structure)", self.line_num)
 
     # debugged
     def term_list(self):
