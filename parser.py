@@ -184,12 +184,17 @@ class Parser():
             Do not catch StopIteration
             leading blanks will be skipped in self.term() function"""
         # only call this function after a right p (
+        pgb = copy.deepcopy(self.program_gen)
         self.term()
         if self.peek_ch(skip_blanks=True) == ',':
             self.token(skip_blanks=True)
             # do not pass on Parser.ParserError
             # If a comma was found, there should be another term
-            self.term_list()
+            try:
+                self.term_list()
+            except Parser.ParserError as perr:
+                self.program_gen = copy.deepcopy(pgb)
+                raise perr
 
     # debugged
     def term(self):
