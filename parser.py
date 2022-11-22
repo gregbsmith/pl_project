@@ -162,7 +162,9 @@ class Parser():
         """Subroutine for <predicate>
             <predicate> -> <atom> | <atom> ( <term-list> )
             This rule can be simplified to:
-            <predicate> -> <atom> | <structure>"""
+            <predicate> -> <structure> | <atom>
+            must skip leading blanks
+            Do not catch StopIteration"""
         self.skip_blanks()
         program_gen_backup = copy.deepcopy(self.program_gen)
         try:
