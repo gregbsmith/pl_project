@@ -271,23 +271,29 @@ class Parser():
             self.token()
             self.character_list()
 
+    # debugged
     def character_list(self):
         """Subroutine for <character-list>
-            <character-list> -> <alphanumeric> | <alphanumeric> <character-list>"""
-        program_gen_backup = copy.deepcopy(self.program_gen)
+            <character-list> -> <alphanumeric> | <alphanumeric> <character-list>
+            Do not catch StopIteration
+            Do not consume character on which recursive calls fail
+            Do not skip leading whitespace"""
+        self.alphanumeric()
         try:
-            self.alphanumeric()
+            self.character_list()
         except Parser.ParserError:
-            self.program_gen = program_gen_backup
-            return
-        self.character_list()
+            pass
 
+    # debugged
     def alphanumeric(self):
         """Subroutine for <alphanumeric>
-            <alphanumeric> -> <lowercase-char> | <uppercase-char> | <digit>"""
+            <alphanumeric> -> <lowercase-char> | <uppercase-char> | <digit>
+            Do not skip blanks
+            Do not catch StopIteration"""
         p_tok = self.peek_token()
         if p_tok != 'lowercase-char' and p_tok != 'uppercase-char' and p_tok != 'digit':
             raise Parser.ParserError('Invalid alphanumeric "'+self.peek_ch()+'"',self.line_num)
+        self.token()
 
     # debugged
     def lowercase_char(self):
@@ -336,29 +342,34 @@ class Parser():
             raise Parser.ParserError('Expected <digit>, found "'+self.peek_ch()+'" instead.', self.line_num)
         self.token()
 
+    #debugged
     def string(self):
         """Subroutine for <string>
-            <string> -> <character> | <character> <string>"""
+            <string> -> <character> | <character> <string>
+            Do not skip blanks
+            Do not catch StopIteration (single quote should appear after a string)
+            According to the rule for <string>, the empty string is not accepted
+            Catch ParserError on recursive calls
+            Do not consume the character on which the recursive call fails"""
         self.character()
-        program_gen_backup = copy.deepcopy(self.program_gen)
         try:
             self.string()
         except Parser.ParserError:
-            self.program_gen = program_gen_backup
+            pass
 
+    # debugged
     def character(self):
         """Subroutine for the <character> symbol.
-            Valid characters are <alphanumeric> or <special>."""
-        n=self.peek_ch()
-        program_gen_backup=copy.deepcopy(self.program_gen)
+            Valid characters are <alphanumeric> or <special>.
+            Do not skip blanks
+            Do not catch StopIteration"""
         try:
-            alphanumeric()
+            self.alphanumeric()
         except Parser.ParserError:
-            self.program_gen = program_gen_backup
             try:
-                special()
+                self.special()
             except Parser.ParserError:
-                raise Parser.ParserError('"'+n+'" is not a <character> (<special> or <alphanumeric>)', self.line_num)
+                raise Parser.ParserError('"'+self.peek_ch()+'" is not a <character> (<special> or <alphanumeric>)', self.line_num)
 
     # debugged
     def special(self):
@@ -392,6 +403,14 @@ class Parser():
             return 'lowercase-char'
         elif n == '\n': # don't want to raise an error for newlines
             return 'newline'
+        elif n == '(':
+            return '('
+        elif n == ')':
+            return ')'
+        elif n == ',':
+            return ','
+        elif n == "'":
+            return "'"
         else: # unrecognized token
             return 'unrecognized'
     
@@ -417,6 +436,14 @@ class Parser():
             self.next_token = 'lowercase-char'
         elif n == '\n': # newlines aren't in the grammar, but we do not want to add errors for them
             self.next_token = 'newline'
+        elif n == '(':
+            self.next_token = '('
+        elif n == ')':
+            self.next_token = ')'
+        elif n == ',':
+            self.next_token = ','
+        elif n == "'":
+            self.next_token = "'"
         else: # unrecognized token
             self.add_error('Line '+ str(self.line_num)+': Unrecognized token: "' + n + '"')
             self.token(skip_blanks)
