@@ -123,27 +123,34 @@ class Parser():
         else:
             raise Parser.ParserError('"." must come at the end of a clause', self.line_num)
 
+    # debugged
     def query(self):
         """Subroutine for the <query> symbol.
             <query> -> ?- <predicate-list> ."""
         # skipping blanks here is redundant because that has already been
         # taken care of by the program() subroutine
+        pgb = copy.deepcopy(self.program_gen)
         n=self.peek_ch(skip_blanks=True)
         if n != '?':
+            self.program_gen = copy.deepcopy(pgb)
             raise Parser.ParserError('<query> must start with "?-", not "' + n + '"', self.line_num)
-        program_gen_backup = copy.deepcopy(self.program_gen)
-        _ = self.next_nonblank()
+        self.token(skip_blanks=True)
         if self.next_ch() != '-':
-            self.program_gen = program_gen_backup
+            self.program_gen = copy.deepcopy(pgb)
             raise Parser.ParserError('<query> must start with "?-", not "?' + n + '"', self.line_num)
-        # check <predicate-list>, but skip blanks first
-        self.skip_blanks()
-        self.predicate_list()
+        # check <predicate-list>
+        # no need to skip leading blanks; <predicate> does this
+        try:
+            self.predicate_list()
+        except StopIteration:
+            self.program_gen = copy.deepcopy(pgb)
+            raise StopIteration("Line "+str(self.line_num)+": reached EOF while parsing predicate-list in query")
         # check for period terminating <query>
         n=self.peek_ch(skip_blanks=True)
         if n != '.':
-            raise Parser.ParserError('<query must end with ".", not "' + n + '"', self.line_num)
-        _ = self.next_nonblank() # get rid of the period
+            self.program_gen = copy.deepcopy(pgb)
+            raise Parser.ParserError('<query> must end with ".", not "' + n + '"', self.line_num)
+        self.token() # get rid of the period
         # not skipping blanks after the period, because this is checked in the
         # program() subroutine
 
