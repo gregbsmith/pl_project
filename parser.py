@@ -100,28 +100,49 @@ class Parser():
         except Parser.ParserError:
             pass
 
+    # debugged
     def clause(self):
         """Subroutine for the <clause> symbol.
             Valid clauses follow this BNF rule:
             <clause> -> <predicate> . | <predicate> :- <predicate-list> ."""
-        self.skip_blanks()
-        self.predicate()
-        self.skip_blanks()
-
-        if self.peek_ch() == ':':
+        # no need to skip leading blanks; predicate() does this
+        pgb = copy.deepcopy(self.program_gen)
+        try:
+            self.predicate()
+        except Parser.ParserError as perr:
+            self.program_gen = copy.deepcopy(pgb)
+            raise perr
+        try:
+            pkch = self.peek_ch(skip_blanks=True)
+        except StopIteration:
+            raise StopIteration("Line "+str(self.line_num)+': reached EOF after first <predicate>')
+        if pkch == ':':
             #it should be a predicate list
             self.token()
-            if self.peek_ch() != '-':
+            try:
+                pkch = self.peek_ch(skip_blanks=False)
+            except StopIteration:
+                raise StopIteration("Line "+str(self.line_num)+': reached EOF after ":" after first <predicate>')
+            if pkch != '-':
                 raise Parser.ParserError('clause must have ":-" between predicate and predicate list', self.line_num)
-            else:
+            
+            self.token() # get rid of -
+            try:
                 self.predicate_list()
+            except Parser.ParserError as perr:
+                self.program_gen = copy.deepcopy(pgb)
+                raise perr
+            except StopIteration:
+                raise StopIteration("Line "+str(self.line_num)+': reached EOF while parsing <predicate-list>')
 
-        self.skip_blanks()
-
-        if self.peek_ch() == '.':
-            self.token()
+            try:
+                pkch = self.peek_ch(skip_blanks=True)
+            except StopIteration:
+                raise StopIteration("Line "+str(self.line_num)+': reached EOF before "." found to terminate <clause>')
+        if pkch == '.':
+            self.token(skip_blanks=True)
         else:
-            raise Parser.ParserError('"." must come at the end of a clause', self.line_num)
+            raise Parser.ParserError('"." must come at the end of a clause; found "'+pkch+'" after <predicate> instead', self.line_num)
 
     # debugged
     def query(self):
