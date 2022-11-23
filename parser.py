@@ -3,10 +3,9 @@
 # Joseph Press      b00095348
 # Abdu Sallouh      b00087818
 # TODO
-# * the restorations of self.program_gen need to happen with iter(str)
-# * the self.line_num variable should also be backed up
-# * debug each subroutine and make sure they all fit together predictably to
-# give the desired functionality
+# * the self.line_num variable should also be backed up when self.program_gen is backed up
+# * give more informative error messages; catch multiple errors per invalid program
+# * find the right place(s) to catch StopIteration
 import itertools
 
 class Parser():
@@ -588,20 +587,6 @@ class Parser():
         self.program_gen = iter(remaining)
         return remaining
 
-def debug() -> int:
-    i = 1
-    while True: # loop until file open fails
-        try:
-            f=open(str(i)+'.txt','r')
-        except FileNotFoundError:
-            return 0
-        contents = f.read()
-        parser = Parser(contents)
-        output = parser.special()
-        print(output)
-        i+=1
-    return 0
-
 # main function
 # reads input files numbered 1.txt and up, parses them and gives output
 # to parser_output.txt
@@ -627,7 +612,4 @@ def main() -> int:
         i+=1
     return 0
 
-#TODO uncomment this
 if __name__=="__main__": exit(main())
-#delete this
-#if __name__=="__main__": exit(debug())
