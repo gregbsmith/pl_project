@@ -620,11 +620,10 @@ def main() -> int:
         contents = f.read()
         parser = Parser(contents)
         output = parser.parse()
-        outputs_lst.append(str(i)+".txt: ")
         if len(output) == 0:
-            outputs_lst.append("Valid program\n")
+            outputs_lst.append(str(i)+".txt:\n"+"Valid program\n")
         else:
-            outputs_lst.append('\n'.join(output))
+            outputs_lst.append(str(i)+".txt:\n"+'\n'.join(output)+'\n')
         i+=1
     return 0
 
