@@ -3,8 +3,8 @@
 # Joseph Press      b00095348
 # Abdu Sallouh      b00087818
 # TODO
-# * the self.line_num variable should also be backed up when self.program_gen is backed up
-# * give more informative error messages; catch multiple errors per invalid program
+# * catch multiple errors per invalid program
+# * give more informative error messages (it could help to keep a dictionary of lines with keys as numbers and values as contents)
 # * find the right place(s) to catch StopIteration
 import itertools
 
@@ -16,9 +16,11 @@ class Parser():
         """Exception raised by the parser
         Attributes:
             message -- explanation of the exception including
-            the line number where this exception happened"""
+            the line number where this exception happened
+            line -- line number where the error was found"""
         def __init__(self, description, ln):
             self.message="Line " + str(ln) + ": " + description
+            self.line = ln
         def __str__(self):
             return self.message
     
@@ -31,7 +33,7 @@ class Parser():
     def __init__(self, cont):
         self.contents = cont
         self.program_gen=iter(cont)
-        self.line_num=0
+        self.line_num=1
         self.error_list=[]
         self.line_buffer=''
         self.line_buffer_num=0
@@ -90,7 +92,9 @@ class Parser():
         # no need to skip blanks; clauses must start with predicates, and predicate()
         # skips leading blanks
         self.clause()
+        # make a backup of program_gen and line_num
         pgb_str = ''.join(self.program_gen)
+        lnumbackup=self.line_num
         self.program_gen = iter(pgb_str)
         try:
             self.skip_blanks()
@@ -101,6 +105,7 @@ class Parser():
             self.clause_list()
         except Parser.ParserError:
             self.program_gen = iter(pgb_str)
+            self.line_num = lnumbackup
             pass
 
     def clause(self):
@@ -110,10 +115,12 @@ class Parser():
         # no need to skip leading blanks; predicate() does this
         pgb_str = ''.join(self.program_gen)
         self.program_gen = iter(pgb_str)
+        lnumbackup = self.line_num
         try:
             self.predicate()
         except Parser.ParserError as perr:
             self.program_gen = iter(pgb_str)
+            self.line_num = lnumbackup
             raise perr
         try:
             pkch = self.peek_ch(skip_blanks=True)
@@ -134,6 +141,7 @@ class Parser():
                 self.predicate_list()
             except Parser.ParserError as perr:
                 self.program_gen = iter(pgb_str)
+                self.line_num = lnumbackup
                 raise perr
             except StopIteration:
                 raise StopIteration("Line "+str(self.line_num)+': reached EOF while parsing <predicate-list>')
@@ -154,13 +162,16 @@ class Parser():
         # taken care of by the program() subroutine
         pgb_str = ''.join(self.program_gen)
         self.program_gen = iter(pgb_str)
+        lnumbackup = self.line_num
         n=self.peek_ch(skip_blanks=True)
         if n != '?':
             self.program_gen = iter(pgb_str)
+            self.line_num = lnumbackup
             raise Parser.ParserError('<query> must start with "?-", not "' + n + '"', self.line_num)
         self.token(skip_blanks=True)
         if self.next_ch() != '-':
             self.program_gen = iter(pgb_str)
+            self.line_num = lnumbackup
             raise Parser.ParserError('<query> must start with "?-", not "?' + n + '"', self.line_num)
         # check <predicate-list>
         # no need to skip leading blanks; <predicate> does this
@@ -168,11 +179,13 @@ class Parser():
             self.predicate_list()
         except StopIteration:
             self.program_gen = iter(pgb_str)
+            self.line_num = lnumbackup
             raise StopIteration("Line "+str(self.line_num)+": reached EOF while parsing predicate-list in query")
         # check for period terminating <query>
         n=self.peek_ch(skip_blanks=True)
         if n != '.':
             self.program_gen = iter(pgb_str)
+            self.line_num = lnumbackup
             raise Parser.ParserError('<query> must end with ".", not "' + n + '"', self.line_num)
         self.token() # get rid of the period
         # not skipping blanks after the period, because this is checked in the
@@ -184,6 +197,7 @@ class Parser():
             No need to skip leading blanks; predicate function does this"""
         pgb_str = ''.join(self.program_gen)
         self.program_gen = iter(pgb_str)
+        lnumbackup = self.line_num
         self.predicate()
         if self.peek_ch(skip_blanks=True) == ',':
             self.token(skip_blanks=True)
@@ -192,6 +206,7 @@ class Parser():
                 self.predicate_list()
             except Parser.ParserError as perr:
                 self.program_gen = iter(pgb_str)
+                self.line_num = lnumbackup
                 raise perr
 
     def predicate(self):
@@ -203,15 +218,18 @@ class Parser():
             Do not catch StopIteration"""
         pgb_str = ''.join(self.program_gen)
         self.program_gen = iter(pgb_str)
+        lnumbackup = self.line_num
         self.skip_blanks()
         try:
             self.structure()
         except Parser.ParserError:
             self.program_gen = iter(pgb_str)
+            self.line_num = lnumbackup
             try:
                 self.atom()
             except Parser.ParserError:
                 self.program_gen = iter(pgb_str)
+                self.line_num = lnumbackup
                 raise Parser.ParserError("Could not parse as a predicate (atom or structure)", self.line_num)
 
     def term_list(self):
@@ -222,6 +240,7 @@ class Parser():
         # only call this function after a right p (
         pgb_str = ''.join(self.program_gen)
         self.program_gen = iter(pgb_str)
+        lnumbackup = self.line_num
         self.term()
         if self.peek_ch(skip_blanks=True) == ',':
             self.token(skip_blanks=True)
@@ -231,6 +250,7 @@ class Parser():
                 self.term_list()
             except Parser.ParserError as perr:
                 self.program_gen = iter(pgb_str)
+                self.line_num = lnumbackup
                 raise perr
 
     def term(self):
@@ -239,25 +259,31 @@ class Parser():
             Must skip leading blanks"""
         pgb_withblanks_str = ''.join(self.program_gen)
         self.program_gen = iter(pgb_withblanks_str)
+        ln_blanks_backup = self.line_num
         self.skip_blanks()
         pgb_str = ''.join(self.program_gen)
         self.program_gen = iter(pgb_str)
+        lnbackup = self.line_num
         try:
             self.structure()
         except Parser.ParserError:
             self.program_gen = iter(pgb_str)
+            self.line_num = lnbackup
             try:
                 self.numeral()
             except Parser.ParserError:
                 self.program_gen = iter(pgb_str)
+                self.line_num = lnbackup
                 try:
                     self.variable()
                 except Parser.ParserError:
                     self.program_gen = iter(pgb_str)
+                    self.line_num = lnbackup
                     try:
                         self.atom()
                     except Parser.ParserError:
                         self.program_gen = iter(pgb_withblanks_str)
+                        self.line_num = ln_blanks_backup
                         raise Parser.ParserError("could not resolve to a term", self.line_num)
 
     def structure(self):
@@ -270,11 +296,13 @@ class Parser():
         # Therefore, it is necessary to back up and restore self.program_gen
         pgb_str = ''.join(self.program_gen)
         self.program_gen = iter(pgb_str)
+        lnbackup = self.line_num
         
         try:
             self.atom()
         except Parser.ParserError as perr:
             self.program_gen = iter(pgb_str)
+            self.line_num = lnbackup
             raise perr
         
         try:
@@ -283,6 +311,7 @@ class Parser():
             raise StopIteration("Line " + str(self.line_num) + ": reached EOF in <structure> after <atom> before ( <term-list> )")
         if self.peek_ch() != '(':
             self.program_gen = iter(pgb_str)
+            self.line_num = lnbackup
             raise Parser.ParserError('<structure> must have <term-list> enclosed in parentheses', self.line_num)
         
         self.token()
@@ -292,12 +321,14 @@ class Parser():
             self.term_list()
         except Parser.ParserError as perr:
             self.program_gen = iter(pgb_str)
+            self.line_num = lnbackup
             raise perr
         except StopIteration as si:
             raise StopIteration("Line "+str(self.line_num)+": reached EOF while reading <term-list>")
         
         if self.peek_ch(skip_blanks=True) != ')':
             self.program_gen = iter(pgb_str)
+            self.line_num = lnbackup
             raise Parser.ParserError('must close parentheses around <term-list> in <structure>',self.line_num)
         self.token(skip_blanks=True)
 
@@ -573,7 +604,6 @@ class Parser():
         self.line_buffer = ''
         self.line_buffer_num=self.line_num
         n=self.next_nonblank()
-        # TODO: This loop becomes infinite if it runs into the end of the file
         while n!='.':
             self.line_buffer+=n
             n=self.next_ch()
