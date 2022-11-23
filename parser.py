@@ -124,7 +124,7 @@ class Parser():
             raise StopIteration("Line "+str(self.line_num)+': reached EOF after first <predicate>')
         if pkch == ':':
             #it should be a predicate list
-            self.token()
+            self.token(skip_blanks=True)
             try:
                 pkch = self.peek_ch(skip_blanks=False)
             except StopIteration:
