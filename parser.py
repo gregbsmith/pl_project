@@ -53,10 +53,7 @@ class Parser():
         except Parser.TerminalError:
             self.error_list.append("Program was the empty string")
             return self.error_list
-        try:
-            self.program()
-        except Parser.TerminalError as terr:
-            self.error_list.append(terr.message)
+        self.program()
         return self.error_list
 
     def program(self):
@@ -65,26 +62,25 @@ class Parser():
         # To preserve the state of self.program_gen and allow reversion back to
         # this state, save program_gen to a backup
         local_errors = []
-        program_gen_backup = copy.deepcopy(self.program_gen)
-        try:
-            self.clause_list()
-        except Parser.ParserError as err:
-            local_errors.append(err.message)
-            self.program_gen = program_gen_backup
-        try:
+        if self.peek_ch(skip_blanks=True) != '?':
+            # looking for a clause list, then a query
+            try:
+                self.clause_list()
+            except Parser.ParserError as perr:
+                local_errors.append(str(perr))
+                self.error_list += local_errors
+                return
             self.skip_blanks()
-        except Parser.TerminalError:
-            local_errors.append('valid programs must have a <query>')
-            self.error_list += local_errors
-            return
         try:
             self.query()
-        except Parser.ParserError as err:
-            local_errors.append(err.message)
+        except Parser.ParserError as perr:
+            local_errors.append(str(perr))
             self.error_list += local_errors
+            return
+        
         try:
             self.skip_blanks()
-        except Parser.TerminalError:
+        except StopIteration:
             # This is good, the file is done
             return
         local_errors.append('After parsing the program, the following remained in the file:\n'+''.join(self.program_gen))
@@ -102,7 +98,7 @@ class Parser():
         try:
             self.skip_blanks()
         except StopIteration:
-            return
+            raise StopIteration("Line "+str(self.line_num)+': reached EOF while parsing clause list')
 
         try:
             self.clause_list()
@@ -656,6 +652,6 @@ def main() -> int:
     return 0
 
 #TODO uncomment this
-#if __name__=="__main__": exit(main())
+if __name__=="__main__": exit(main())
 #delete this
-if __name__=="__main__": exit(debug())
+#if __name__=="__main__": exit(debug())
