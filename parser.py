@@ -3,13 +3,11 @@
 # Joseph Press      b00095348
 # Abdu Sallouh      b00087818
 # TODO
-# * the restorations of self.program_gen also need to be done with
-# copy.deepcopy
+# * the restorations of self.program_gen need to happen with iter(str)
 # * the self.line_num variable should also be backed up
 # * debug each subroutine and make sure they all fit together predictably to
 # give the desired functionality
 import itertools
-import copy
 
 class Parser():
     """Parser class that takes a program and tells whether it is valid according
@@ -94,7 +92,8 @@ class Parser():
         # no need to skip blanks; clauses must start with predicates, and predicate()
         # skips leading blanks
         self.clause()
-        #pgb = copy.deepcopy(self.program_gen)
+        pgb_str = ''.join(self.program_gen)
+        self.program_gen = iter(pgb_str)
         try:
             self.skip_blanks()
         except StopIteration:
@@ -103,7 +102,7 @@ class Parser():
         try:
             self.clause_list()
         except Parser.ParserError:
-            #self.program_gen = copy.deepcopy(pgb)
+            self.program_gen = iter(pgb_str)
             pass
 
     # debugged
@@ -112,11 +111,12 @@ class Parser():
             Valid clauses follow this BNF rule:
             <clause> -> <predicate> . | <predicate> :- <predicate-list> ."""
         # no need to skip leading blanks; predicate() does this
-        pgb = copy.deepcopy(self.program_gen)
+        pgb_str = ''.join(self.program_gen)
+        self.program_gen = iter(pgb_str)
         try:
             self.predicate()
         except Parser.ParserError as perr:
-            self.program_gen = copy.deepcopy(pgb)
+            self.program_gen = iter(pgb_str)
             raise perr
         try:
             pkch = self.peek_ch(skip_blanks=True)
@@ -136,7 +136,7 @@ class Parser():
             try:
                 self.predicate_list()
             except Parser.ParserError as perr:
-                self.program_gen = copy.deepcopy(pgb)
+                self.program_gen = iter(pgb_str)
                 raise perr
             except StopIteration:
                 raise StopIteration("Line "+str(self.line_num)+': reached EOF while parsing <predicate-list>')
@@ -156,26 +156,27 @@ class Parser():
             <query> -> ?- <predicate-list> ."""
         # skipping blanks here is redundant because that has already been
         # taken care of by the program() subroutine
-        pgb = copy.deepcopy(self.program_gen)
+        pgb_str = ''.join(self.program_gen)
+        self.program_gen = iter(pgb_str)
         n=self.peek_ch(skip_blanks=True)
         if n != '?':
-            self.program_gen = copy.deepcopy(pgb)
+            self.program_gen = iter(pgb_str)
             raise Parser.ParserError('<query> must start with "?-", not "' + n + '"', self.line_num)
         self.token(skip_blanks=True)
         if self.next_ch() != '-':
-            self.program_gen = copy.deepcopy(pgb)
+            self.program_gen = iter(pgb_str)
             raise Parser.ParserError('<query> must start with "?-", not "?' + n + '"', self.line_num)
         # check <predicate-list>
         # no need to skip leading blanks; <predicate> does this
         try:
             self.predicate_list()
         except StopIteration:
-            self.program_gen = copy.deepcopy(pgb)
+            self.program_gen = iter(pgb_str)
             raise StopIteration("Line "+str(self.line_num)+": reached EOF while parsing predicate-list in query")
         # check for period terminating <query>
         n=self.peek_ch(skip_blanks=True)
         if n != '.':
-            self.program_gen = copy.deepcopy(pgb)
+            self.program_gen = iter(pgb_str)
             raise Parser.ParserError('<query> must end with ".", not "' + n + '"', self.line_num)
         self.token() # get rid of the period
         # not skipping blanks after the period, because this is checked in the
@@ -186,7 +187,8 @@ class Parser():
         """Subroutine for the <predicate-list> symbol.
             <predicate-list> -> <predicate> | <predicate> , <predicate-list>
             No need to skip leading blanks; predicate function does this"""
-        pgb = copy.deepcopy(self.program_gen)
+        pgb_str = ''.join(self.program_gen)
+        self.program_gen = iter(pgb_str)
         self.predicate()
         if self.peek_ch(skip_blanks=True) == ',':
             self.token(skip_blanks=True)
@@ -194,7 +196,7 @@ class Parser():
             try:
                 self.predicate_list()
             except Parser.ParserError as perr:
-                self.program_gen = copy.deepcopy(pgb)
+                self.program_gen = iter(pgb_str)
                 raise perr
 
     # debugged
@@ -205,16 +207,17 @@ class Parser():
             <predicate> -> <structure> | <atom>
             must skip leading blanks
             Do not catch StopIteration"""
-        program_gen_backup = copy.deepcopy(self.program_gen)
+        pgb_str = ''.join(self.program_gen)
+        self.program_gen = iter(pgb_str)
         self.skip_blanks()
         try:
             self.structure()
         except Parser.ParserError:
-            self.program_gen = copy.deepcopy(program_gen_backup)
+            self.program_gen = iter(pgb_str)
             try:
                 self.atom()
             except Parser.ParserError:
-                self.program_gen = copy.deepcopy(program_gen_backup)
+                self.program_gen = iter(pgb_str)
                 raise Parser.ParserError("Could not parse as a predicate (atom or structure)", self.line_num)
 
     # debugged
@@ -224,7 +227,8 @@ class Parser():
             Do not catch StopIteration
             leading blanks will be skipped in self.term() function"""
         # only call this function after a right p (
-        pgb = copy.deepcopy(self.program_gen)
+        pgb_str = ''.join(self.program_gen)
+        self.program_gen = iter(pgb_str)
         self.term()
         if self.peek_ch(skip_blanks=True) == ',':
             self.token(skip_blanks=True)
@@ -233,7 +237,7 @@ class Parser():
             try:
                 self.term_list()
             except Parser.ParserError as perr:
-                self.program_gen = copy.deepcopy(pgb)
+                self.program_gen = iter(pgb_str)
                 raise perr
 
     # debugged
@@ -241,27 +245,27 @@ class Parser():
         """Subroutine for <term>
             <term> -> <atom> | <variable> | <structure> | <numeral>
             Must skip leading blanks"""
-        # copy.deepcopy is definitely needed here for pgb restorations because it can
-        # be restored and modified many times
-        pgb_withblanks = copy.deepcopy(self.program_gen)
+        pgb_withblanks_str = ''.join(self.program_gen)
+        self.program_gen = iter(pgb_withblanks_str)
         self.skip_blanks()
-        pgb = copy.deepcopy(self.program_gen)
+        pgb_str = ''.join(self.program_gen)
+        self.program_gen = iter(pgb_str)
         try:
             self.structure()
         except Parser.ParserError:
-            self.program_gen = copy.deepcopy(pgb)
+            self.program_gen = iter(pgb_str)
             try:
                 self.numeral()
             except Parser.ParserError:
-                self.program_gen = copy.deepcopy(pgb)
+                self.program_gen = iter(pgb_str)
                 try:
                     self.variable()
                 except Parser.ParserError:
-                    self.program_gen = copy.deepcopy(pgb)
+                    self.program_gen = iter(pgb_str)
                     try:
                         self.atom()
                     except Parser.ParserError:
-                        self.program_gen = copy.deepcopy(pgb_withblanks)
+                        self.program_gen = iter(pgb_withblanks_str)
                         raise Parser.ParserError("could not resolve to a term", self.line_num)
 
     # debugged
@@ -272,14 +276,14 @@ class Parser():
             Do not catch StopIteration"""
         # This subroutine involves calling multiple different subroutines.
         # It should succeed fully and "eat" the proper characters, or fail entirely.
-        # Therefore, it is necessary to save and restore a copy of self.program_gen
-        # copy.deepcopy may not be needed here for RESTORATION only
-        pgb = copy.deepcopy(self.program_gen)
+        # Therefore, it is necessary to back up and restore self.program_gen
+        pgb_str = ''.join(self.program_gen)
+        self.program_gen = iter(pgb_str)
         
         try:
             self.atom()
         except Parser.ParserError as perr:
-            self.program_gen = copy.deepcopy(pgb)
+            self.program_gen = iter(pgb_str)
             raise perr
         
         try:
@@ -287,7 +291,7 @@ class Parser():
         except StopIteration:
             raise StopIteration("Line " + str(self.line_num) + ": reached EOF in <structure> after <atom> before ( <term-list> )")
         if self.peek_ch() != '(':
-            self.program_gen = copy.deepcopy(pgb)
+            self.program_gen = iter(pgb_str)
             raise Parser.ParserError('<structure> must have <term-list> enclosed in parentheses', self.line_num)
         
         self.token()
@@ -296,13 +300,13 @@ class Parser():
             # do not need to skip blanks; self.term() function skips leading blanks
             self.term_list()
         except Parser.ParserError as perr:
-            self.program_gen = copy.deepcopy(pgb)
+            self.program_gen = iter(pgb_str)
             raise perr
         except StopIteration as si:
             raise StopIteration("Line "+str(self.line_num)+": reached EOF while reading <term-list>")
         
         if self.peek_ch(skip_blanks=True) != ')':
-            self.program_gen = copy.deepcopy(pgb)
+            self.program_gen = iter(pgb_str)
             raise Parser.ParserError('must close parentheses around <term-list> in <structure>',self.line_num)
         self.token(skip_blanks=True)
 
@@ -478,7 +482,9 @@ class Parser():
         """Retrieve and return the next token without changing the state of
         self.program_gen or the self.next_tok variable
             Do not catch StopIteration"""
-        temp_gen = copy.deepcopy(self.program_gen)
+        pgb_str = ''.join(self.program_gen)
+        temp_gen = iter(pgb_str)
+        self.program_gen = iter(pgb_str)
         n=next(temp_gen)
         if skip_blanks:
             while n.isspace():
