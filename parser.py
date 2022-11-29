@@ -23,12 +23,6 @@ class Parser():
             self.line = ln
         def __str__(self):
             return self.message
-    
-    class TerminalError(ParserError):
-        """Exception raised by the parser that will terminate the parsing of
-        the current file; usually when unexpected end of file is found."""
-        def __init__(self, d, l):
-            super().__init__(d, l)
 
     def __init__(self, cont):
         self.contents = cont
@@ -49,10 +43,13 @@ class Parser():
         Output a list of descriptions of errors in the program"""
         try:
             self.skip_blanks()
-        except Parser.TerminalError:
-            self.error_list.append("Program was the empty string")
+        except StopIteration:
+            self.error_list.append("Error: program was the empty string")
             return self.error_list
-        self.program()
+        try:
+            self.program()
+        except StopIteration as si:
+            self.error_list.append(str(si))
         return self.error_list
 
     def program(self):
@@ -117,6 +114,7 @@ class Parser():
         self.program_gen = iter(pgb_str)
         lnumbackup = self.line_num
         try:
+            # TODO make sure StopIteration instances in predicate and below give informative messages
             self.predicate()
         except Parser.ParserError as perr:
             self.program_gen = iter(pgb_str)
@@ -155,6 +153,7 @@ class Parser():
         else:
             raise Parser.ParserError('"." must come at the end of a clause; found "'+pkch+'" after <predicate> instead', self.line_num)
 
+    # TODO make sure StopIteration is handled properly here
     def query(self):
         """Subroutine for the <query> symbol.
             <query> -> ?- <predicate-list> ."""
