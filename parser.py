@@ -5,7 +5,6 @@
 # TODO
 # * catch multiple errors per invalid program
 # * give more informative error messages (it could help to keep a dictionary of lines with keys as numbers and values as contents)
-# * find the right place(s) to catch StopIteration
 import itertools
 
 class Parser():
@@ -114,7 +113,6 @@ class Parser():
         self.program_gen = iter(pgb_str)
         lnumbackup = self.line_num
         try:
-            # TODO make sure StopIteration instances in predicate and below give informative messages
             self.predicate()
         except Parser.ParserError as perr:
             self.program_gen = iter(pgb_str)
@@ -153,7 +151,6 @@ class Parser():
         else:
             raise Parser.ParserError('"." must come at the end of a clause; found "'+pkch+'" after <predicate> instead', self.line_num)
 
-    # TODO make sure StopIteration is handled properly here
     def query(self):
         """Subroutine for the <query> symbol.
             <query> -> ?- <predicate-list> ."""
@@ -162,13 +159,20 @@ class Parser():
         pgb_str = ''.join(self.program_gen)
         self.program_gen = iter(pgb_str)
         lnumbackup = self.line_num
-        n=self.peek_ch(skip_blanks=True)
+        try:
+            n=self.peek_ch(skip_blanks=True)
+        except StopIteration:
+            raise StopIteration("Line " + str(self.line_num) + ": reached EOF before <query>")
         if n != '?':
             self.program_gen = iter(pgb_str)
             self.line_num = lnumbackup
             raise Parser.ParserError('<query> must start with "?-", not "' + n + '"', self.line_num)
         self.token(skip_blanks=True)
-        if self.next_ch() != '-':
+        try:
+            n=self.next_ch()
+        except StopIteration:
+            raise StopIteration("Line " + str(self.line_num) + ": reached EOF after '?' in <query>")
+        if n != '-':
             self.program_gen = iter(pgb_str)
             self.line_num = lnumbackup
             raise Parser.ParserError('<query> must start with "?-", not "?' + n + '"', self.line_num)
@@ -177,11 +181,14 @@ class Parser():
         try:
             self.predicate_list()
         except StopIteration:
-            self.program_gen = iter(pgb_str)
-            self.line_num = lnumbackup
+            #self.program_gen = iter(pgb_str)
+            #self.line_num = lnumbackup
             raise StopIteration("Line "+str(self.line_num)+": reached EOF while parsing predicate-list in query")
         # check for period terminating <query>
-        n=self.peek_ch(skip_blanks=True)
+        try:
+            n=self.peek_ch(skip_blanks=True)
+        except StopIteration:
+            raise StopIteration("Line " + str(self.line_num) + ": no '.' found after <predicate-list>")
         if n != '.':
             self.program_gen = iter(pgb_str)
             self.line_num = lnumbackup
@@ -230,6 +237,10 @@ class Parser():
                 self.program_gen = iter(pgb_str)
                 self.line_num = lnumbackup
                 raise Parser.ParserError("Could not parse as a predicate (atom or structure)", self.line_num)
+            except StopIteration:
+                raise StopIteration("Line " + str(self.line_num) + ": reached EOF while parsing <atom>")
+        except StopIteration:
+            raise StopIteration("Line " + str(self.line_num) + ": reached EOF while parsing <structure>")
 
     def term_list(self):
         """Subroutine for <term-list>
