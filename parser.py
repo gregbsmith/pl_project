@@ -222,10 +222,10 @@ class Parser():
             <predicate> -> <structure> | <atom>
             must skip leading blanks
             Do not catch StopIteration"""
+        self.skip_blanks()
         pgb_str = ''.join(self.program_gen)
         self.program_gen = iter(pgb_str)
         lnumbackup = self.line_num
-        self.skip_blanks()
         try:
             self.structure()
         except Parser.ParserError:
@@ -252,16 +252,26 @@ class Parser():
         self.program_gen = iter(pgb_str)
         lnumbackup = self.line_num
         self.term()
-        if self.peek_ch(skip_blanks=True) == ',':
+        pkch = self.peek_ch(skip_blanks=True)
+        if pkch == ')':
+            return
+        while pkch in self.specials:
+            self.error_list.append("Line " + str(self.line_num) + ': <special> characters like "' + pkch + '" are not allowed in non-string terms')         
             self.token(skip_blanks=True)
-            # do not pass on Parser.ParserError
-            # If a comma was found, there should be another term
-            try:
-                self.term_list()
-            except Parser.ParserError as perr:
-                self.program_gen = iter(pgb_str)
-                self.line_num = lnumbackup
-                raise perr
+            pkch = self.peek_ch(skip_blanks=True)
+        
+        if pkch != ',':
+            self.error_list.append("Line " + str(self.line_num) + ": <terms> in a <term-list> must be comma-separated")
+        else:
+            self.token(skip_blanks=True)
+        # do not pass on Parser.ParserError
+        # If no ')' was found, there should be another term
+        try:
+            self.term_list()
+        except Parser.ParserError as perr:
+            self.program_gen = iter(pgb_str)
+            self.line_num = lnumbackup
+            raise perr
 
     def term(self):
         """Subroutine for <term>
