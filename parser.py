@@ -269,6 +269,13 @@ class Parser():
         try:
             self.term_list()
         except Parser.ParserError as perr:
+            # TODO
+            # * write a self.skip_until() method
+            # * use it to show the invalid term here
+            # (skip until "," or ")")
+            # * give a message saying "invalid term"
+            # * check whether a ")" has been reached
+            # * if not, eat the "," and call term_list again
             self.program_gen = iter(pgb_str)
             self.line_num = lnumbackup
             raise perr
