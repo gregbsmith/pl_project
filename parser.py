@@ -269,16 +269,14 @@ class Parser():
         try:
             self.term_list()
         except Parser.ParserError as perr:
-            # TODO
-            # * write a self.skip_until() method
-            # * use it to show the invalid term here
-            # (skip until "," or ")")
-            # * give a message saying "invalid term"
-            # * check whether a ")" has been reached
-            # * if not, eat the "," and call term_list again
-            self.program_gen = iter(pgb_str)
-            self.line_num = lnumbackup
-            raise perr
+            try:
+                invalid_term = self.skip_until(",)")
+            except StopIteration:
+                raise StopIteration("Line " + str(self.line_num) + ": reached EOF while parsing <term-list>")
+            self.add_error("Line " + str(self.line_num) + ': invalid <term>: "' + invalid_term + '"')
+            if self.peek_ch() == ',':
+                self.token()
+                self.term_list()
 
     def term(self):
         """Subroutine for <term>
@@ -600,6 +598,21 @@ class Parser():
         while n.isspace():
             n = self.next_ch()
         self.program_gen = itertools.chain([n],self.program_gen)
+    
+    def skip_until(self, chars):
+        """Skip until any of the characters in the string "chars"
+            if "chars" is the empty string, skip nothing
+            Return what was skipped; do not skip the ending character
+            Do not catch StopIteration"""
+        if chars == None or chars == "":
+            return
+        n = self.next_ch()
+        skipped = []
+        while not n in chars:
+            skipped.append(n)
+            n = self.next_ch()
+        self.program_gen = itertools.chain([n],self.program_gen)
+        return ''.join(skipped)
 
     def peek_ch(self, skip_blanks=False):
         """Peek at the next character from the program generator.
