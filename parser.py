@@ -5,6 +5,7 @@
 # TODO
 # * catch multiple errors per invalid program
 # * give more informative error messages (it could help to keep a dictionary of lines with keys as numbers and values as contents)
+# * Look into using the same or a similar strategy to recover from other invalid elements like you did with <term-list>
 import itertools
 
 class Parser():
