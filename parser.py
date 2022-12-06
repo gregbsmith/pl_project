@@ -186,7 +186,7 @@ class Parser():
         except StopIteration:
             #self.program_gen = iter(pgb_str)
             #self.line_num = lnumbackup
-            raise StopIteration("Line "+str(self.line_num)+": reached EOF while parsing predicate-list in query")
+            raise StopIteration("Line "+str(self.line_num)+": reached EOF while parsing <predicate-list> in <query>")
         # check for period terminating <query>
         try:
             n=self.peek_ch(skip_blanks=True)
