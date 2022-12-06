@@ -1,0 +1,49 @@
+
+Gregory Smith     b00095534
+Joseph Press      b00095348
+Abdu Sallouh      b00087818
+
+1.txt:
+Valid program
+
+2.txt:
+Valid program
+
+3.txt:
+Valid program
+
+4.txt:
+Line 5: <special> characters like "-" are not allowed in non-string terms
+Line 5: <terms> in a <term-list> must be comma-separated
+
+5.txt:
+Line 3: <query> must start with "?-", not "f"
+
+6.txt:
+Line 1: invalid <term>: "[]"
+Line 1: invalid <term>: " []"
+Line 2: invalid <term>: "[A]"
+Line 2: invalid <term>: " [A]"
+Line 3: invalid <term>: "[A"
+Line 3: <terms> in a <term-list> must be comma-separated
+Line 3: invalid <term>: " | Rest]"
+Line 3: invalid <term>: "[A"
+Line 3: <terms> in a <term-list> must be comma-separated
+Line 3: invalid <term>: " | Rest]"
+Line 7: invalid <term>: "[]"
+Line 7: invalid <term>: " []"
+Line 7: invalid <term>: " []"
+Line 7: invalid <term>: "[A]"
+Line 7: invalid <term>: " [A]"
+Line 7: invalid <term>: " []"
+Line 8: invalid <term>: "[A"
+Line 8: <terms> in a <term-list> must be comma-separated
+Line 8: invalid <term>: " | R]"
+Line 8: invalid <term>: " [A | Ra]"
+Line 8: invalid <term>: " [B | Rb]"
+Line 9: invalid <term>: " []"
+Line 9: invalid <term>: "[]"
+Line 10: invalid <term>: "[A | Ra]"
+Line 10: invalid <term>: " [B | Rb]"
+Line 10: invalid <term>: " [A | M]"
+Line 10: <query> must start with "?-", not "m"

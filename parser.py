@@ -1,7 +1,10 @@
 #!/usr/bin/python3
-# Gregory Smith     b00095534
-# Joseph Press      b00095348
-# Abdu Sallouh      b00087818
+header="""
+Gregory Smith     b00095534
+Joseph Press      b00095348
+Abdu Sallouh      b00087818
+
+"""
 # TODO
 # * catch multiple errors per invalid program
 # * give more informative error messages (it could help to keep a dictionary of lines with keys as numbers and values as contents)
@@ -674,6 +677,7 @@ def main() -> int:
         except FileNotFoundError:
             # write the output and terminate
             out = open('parser_output.txt','w')
+            out.write(header)
             out.write('\n'.join(outputs_lst))
             return 0
         # read and parse the contents of the file
