@@ -10,7 +10,7 @@ Abdu Sallouh      b00087818
 # * give more informative error messages (it could help to keep a dictionary of lines with keys as numbers and values as contents)
 # * Look into using the same or a similar strategy to recover from other invalid elements like you did with <term-list>
 #   For example, so the same thing with <predicate-list>, skipping until "," or "."
-#   Also do the same thing with <clause-list>
+#   Also do the same thing with <clause-list> (skip until "." or "?")
 import itertools
 
 class Parser():
@@ -677,8 +677,7 @@ def main() -> int:
         except FileNotFoundError:
             # write the output and terminate
             out = open('parser_output.txt','w')
-            out.write(header)
-            out.write('\n'.join(outputs_lst))
+            out.write(header + '\n'.join(outputs_lst))
             return 0
         # read and parse the contents of the file
         contents = f.read()
