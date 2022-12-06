@@ -6,6 +6,7 @@
 # * catch multiple errors per invalid program
 # * give more informative error messages (it could help to keep a dictionary of lines with keys as numbers and values as contents)
 # * Look into using the same or a similar strategy to recover from other invalid elements like you did with <term-list>
+#   For example, so the same thing with <predicate-list>, skipping until "," or "."
 import itertools
 
 class Parser():
@@ -683,6 +684,6 @@ def main() -> int:
         else:
             outputs_lst.append(str(i)+".txt:\n"+'\n'.join(output)+'\n')
         i+=1
-    return 0
+# end of main()
 
 if __name__=="__main__": exit(main())
