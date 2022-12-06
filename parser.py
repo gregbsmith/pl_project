@@ -252,7 +252,19 @@ class Parser():
         pgb_str = ''.join(self.program_gen)
         self.program_gen = iter(pgb_str)
         lnumbackup = self.line_num
-        self.term()
+        try:
+            self.term()
+        except Parser.ParserError as perr:
+            # TODO
+            try:
+                invalid_term = self.skip_until(",)")
+            except StopIteration:
+                raise StopIteration("Line " + str(self.line_num) + ": reached EOF while parsing <term-list>")
+            self.add_error("Line " + str(self.line_num) + ': invalid <term>: "' + invalid_term + '"')
+            if self.peek_ch() == ',':
+                self.token()
+                self.term_list()
+        
         pkch = self.peek_ch(skip_blanks=True)
         if pkch == ')':
             return
@@ -267,17 +279,7 @@ class Parser():
             self.token(skip_blanks=True)
         # do not pass on Parser.ParserError
         # If no ')' was found, there should be another term
-        try:
-            self.term_list()
-        except Parser.ParserError as perr:
-            try:
-                invalid_term = self.skip_until(",)")
-            except StopIteration:
-                raise StopIteration("Line " + str(self.line_num) + ": reached EOF while parsing <term-list>")
-            self.add_error("Line " + str(self.line_num) + ': invalid <term>: "' + invalid_term + '"')
-            if self.peek_ch() == ',':
-                self.token()
-                self.term_list()
+        self.term_list()
 
     def term(self):
         """Subroutine for <term>
