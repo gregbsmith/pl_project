@@ -7,6 +7,7 @@
 # * give more informative error messages (it could help to keep a dictionary of lines with keys as numbers and values as contents)
 # * Look into using the same or a similar strategy to recover from other invalid elements like you did with <term-list>
 #   For example, so the same thing with <predicate-list>, skipping until "," or "."
+#   Also do the same thing with <clause-list>
 import itertools
 
 class Parser():
