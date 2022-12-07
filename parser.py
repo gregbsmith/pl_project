@@ -121,6 +121,9 @@ class Parser():
         try:
             self.predicate()
         except Parser.ParserError as perr:
+            #TODO come back to this
+            #invalid_predicate = self.skip_until('.:',outside_quotes = True)
+            #self.add_error("Line " + str(self.line_num) + ': invalid <predicate>: "' + invalid_predicate + '"')
             self.program_gen = iter(pgb_str)
             self.line_num = lnumbackup
             raise perr
@@ -260,7 +263,6 @@ class Parser():
         try:
             self.term()
         except Parser.ParserError as perr:
-            # TODO
             try:
                 invalid_term = self.skip_until(",)")
             except StopIteration:
@@ -607,18 +609,27 @@ class Parser():
             n = self.next_ch()
         self.program_gen = itertools.chain([n],self.program_gen)
     
-    def skip_until(self, chars):
+    def skip_until(self, chars, outside_quotes=False):
         """Skip until any of the characters in the string "chars"
             if "chars" is the empty string, skip nothing
             Return what was skipped; do not skip the ending character
-            Do not catch StopIteration"""
+            Do not catch StopIteration
+            if outside_quotes is set to true, only stop on an item in chars if it is outside single quotes"""
         if chars == None or chars == "":
             return
         n = self.next_ch()
         skipped = []
-        while not n in chars:
-            skipped.append(n)
-            n = self.next_ch()
+        if outside_quotes:
+            am_i_in_single_quotes = False
+            while not n in chars or am_i_in_single_quotes:
+                skipped.append(n)
+                if n == "'":
+                    am_i_in_single_quotes = not am_i_in_single_quotes
+                n=self.next_ch()
+        else:
+            while not n in chars:
+                skipped.append(n)
+                n = self.next_ch()
         self.program_gen = itertools.chain([n],self.program_gen)
         return ''.join(skipped)
 
