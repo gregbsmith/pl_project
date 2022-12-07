@@ -687,8 +687,9 @@ def main() -> int:
             f=open(str(i)+'.txt','r')
         except FileNotFoundError:
             # write the output and terminate
-            out = open('parser_output.txt','w')
-            out.write('parser_output.txt' + header + '\n'.join(outputs_lst))
+            ofilename='parser_output.txt'
+            out = open(ofilename,'w')
+            out.write(ofilename + header + '\n'.join(outputs_lst))
             return 0
         # read and parse the contents of the file
         contents = f.read()
@@ -700,5 +701,4 @@ def main() -> int:
             outputs_lst.append(str(i)+".txt:\n"+'\n'.join(output)+'\n')
         i+=1
 # end of main()
-
 if __name__=="__main__": exit(main())
