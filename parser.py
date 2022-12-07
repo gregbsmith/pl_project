@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+# parser.py
+# Simplified Prolog parser
 header="""
 Gregory Smith     b00095534
 Joseph Press      b00095348
@@ -686,7 +688,7 @@ def main() -> int:
         except FileNotFoundError:
             # write the output and terminate
             out = open('parser_output.txt','w')
-            out.write(header + '\n'.join(outputs_lst))
+            out.write('parser_output.txt' + header + '\n'.join(outputs_lst))
             return 0
         # read and parse the contents of the file
         contents = f.read()
