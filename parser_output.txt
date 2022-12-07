@@ -17,7 +17,8 @@ Line 5: <special> characters like "-" are not allowed in non-string terms
 Line 5: <terms> in a <term-list> must be comma-separated
 
 5.txt:
-Line 3: <query> must start with "?-", not "f"
+Line 3: invalid <predicate>: "A1 is N*A"
+Line 3: invalid <predicate>: "N1 is N-1"
 
 6.txt:
 Line 1: invalid <term>: "[]"
@@ -46,4 +47,13 @@ Line 9: invalid <term>: "[]"
 Line 10: invalid <term>: "[A | Ra]"
 Line 10: invalid <term>: " [B | Rb]"
 Line 10: invalid <term>: " [A | M]"
-Line 10: <query> must start with "?-", not "m"
+Line 10: invalid <predicate>: "A =< B"
+Line 10: invalid <term>: " [B | Rb]"
+Line 11: invalid <term>: "[A | Ra]"
+Line 11: invalid <term>: " [B | Rb]"
+Line 11: invalid <term>: " [B | M]"
+Line 11: invalid <predicate>: "A > B"
+Line 11: invalid <term>: "[A | Ra]"
+Line 12: invalid <term>: "[3"
+Line 12: <terms> in a <term-list> must be comma-separated
+Line 12: invalid <term>: "]"

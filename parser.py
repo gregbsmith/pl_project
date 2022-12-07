@@ -5,12 +5,6 @@ Joseph Press      b00095348
 Abdu Sallouh      b00087818
 
 """
-# TODO
-# * catch multiple errors per invalid program
-# * give more informative error messages (it could help to keep a dictionary of lines with keys as numbers and values as contents)
-# * Look into using the same or a similar strategy to recover from other invalid elements like you did with <term-list>
-#   For example, so the same thing with <predicate-list>, skipping until "," or "."
-#   Also do the same thing with <clause-list> (skip until "." or "?")
 import itertools
 
 class Parser():
@@ -102,13 +96,14 @@ class Parser():
             self.skip_blanks()
         except StopIteration:
             raise StopIteration("Line "+str(self.line_num)+': reached EOF while parsing clause list')
-
-        try:
-            self.clause_list()
-        except Parser.ParserError:
-            self.program_gen = iter(pgb_str)
-            self.line_num = lnumbackup
-            pass
+        # this is the beginning of a query; we're done here because a clause can't start with a "?"
+        if self.peek_ch() != '?':
+            try:
+                self.clause_list()
+            except Parser.ParserError as perr:
+                self.program_gen = iter(pgb_str)
+                self.line_num = lnumbackup
+                raise perr
 
     def clause(self):
         """Subroutine for the <clause> symbol.
@@ -121,12 +116,9 @@ class Parser():
         try:
             self.predicate()
         except Parser.ParserError as perr:
-            #TODO come back to this
-            #invalid_predicate = self.skip_until('.:',outside_quotes = True)
-            #self.add_error("Line " + str(self.line_num) + ': invalid <predicate>: "' + invalid_predicate + '"')
-            self.program_gen = iter(pgb_str)
-            self.line_num = lnumbackup
-            raise perr
+            # detect, report, and recover from an invalid predicate here
+            invalid_predicate = self.skip_until('.:',outside_quotes = True)
+            self.add_error("Line " + str(self.line_num) + ': invalid <predicate>: "' + invalid_predicate + '"')
         try:
             pkch = self.peek_ch(skip_blanks=True)
         except StopIteration:
@@ -137,7 +129,7 @@ class Parser():
             try:
                 pkch = self.peek_ch(skip_blanks=False)
             except StopIteration:
-                raise StopIteration("Line "+str(self.line_num)+': reached EOF after ":" after first <predicate>')
+                raise StopIteration("Line "+str(self.line_num)+': reached EOF after ":" after first <predicate> in <clause>')
             if pkch != '-':
                 raise Parser.ParserError('clause must have ":-" between predicate and predicate list', self.line_num)
             
@@ -213,16 +205,22 @@ class Parser():
         pgb_str = ''.join(self.program_gen)
         self.program_gen = iter(pgb_str)
         lnumbackup = self.line_num
-        self.predicate()
+        try:
+            self.predicate()
+        except Parser.ParserError as perr:
+            try:
+                invalid_predicate = self.skip_until(",.",outside_quotes=True)
+            except StopIteration:
+                raise StopIteration("Line "+str(self.line_num)+": reached EOF while parsing <predicate-list>")
+            self.add_error("Line " + str(self.line_num) + ': invalid <predicate>: "'+invalid_predicate+'"')
+            if self.peek_ch() == ',':
+                self.token()
+                self.predicate_list()
+        # only continue if there is a comma found
         if self.peek_ch(skip_blanks=True) == ',':
             self.token(skip_blanks=True)
             # predicate list again
-            try:
-                self.predicate_list()
-            except Parser.ParserError as perr:
-                self.program_gen = iter(pgb_str)
-                self.line_num = lnumbackup
-                raise perr
+            self.predicate_list()
 
     def predicate(self):
         """Subroutine for <predicate>
